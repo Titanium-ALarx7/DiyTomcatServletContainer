@@ -2,6 +2,8 @@ package individual.wangtianyao.diytomcat;
 
 import cn.hutool.core.util.NetUtil;
 
+import individual.wangtianyao.diytomcat.http.HttpRequest;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -23,13 +25,11 @@ public class BootStrap {
 
             while(true){
                 Socket s = serverSocket.accept();
-                InputStream is = s.getInputStream();
-                int buffersize = 1024;
-                byte[] buffer = new byte[buffersize];
-                // read遇到EOF会返回-1
-                is.read(buffer);
-                String requestString = new String(buffer, StandardCharsets.UTF_8);
-                System.out.println("Input Information from Explorer: \r\n" + requestString);
+                HttpRequest reqs = new HttpRequest(s);
+
+                String requestString = reqs.getRequestString();
+                System.out.println("URI got from the Client Request: "+reqs.getUri()+"\r\n");
+                System.out.println("Input Information from Explorer: \r\n" + requestString+"\r\n");
 
                 OutputStream os = s.getOutputStream();
                 String response_head = "HTTP/1.1 200 OK\r\n" +"Content-Type:text/html\r\n\r\n";
