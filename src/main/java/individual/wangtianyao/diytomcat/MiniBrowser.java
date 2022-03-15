@@ -1,9 +1,6 @@
 package individual.wangtianyao.diytomcat;
 
-import com.sun.org.apache.xpath.internal.operations.String;
-
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.Socket;
@@ -13,12 +10,13 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 public class MiniBrowser {
-    public static void main(String[] args) throws Exception{
+    public static void main(String[] args){
         String url = "http://static.how2j.cn/diytomcat.html";
         String contentString = getContentString(url, false);
-        System.out.println(contentString);
+        System.out.println(contentString + "\n\n\n");
 
         String httpString = getHttpString(url, false);
         System.out.println(httpString);
@@ -69,7 +67,7 @@ public class MiniBrowser {
     }
 
     public static byte[] getHttpBytes(String url, boolean gzip){
-        byte[] result = null;
+        byte[] result;
         try{
             URL u = new URL(url);
             Socket client = new Socket();
@@ -91,14 +89,41 @@ public class MiniBrowser {
             String path = u.getPath();
             if(path.length()==0) path="/";
             String firstLine = "GET" + path + "HTTP/1.1\r\n";
+
             StringBuffer httpRequestString = new StringBuffer();
+            httpRequestString.append(firstLine);
+            Set<String> headers = requestHeaders.keySet();
+            for(String header: headers){
+                String headLine = header + ":" + requestHeaders.get(header)+"\r\n";
+                httpRequestString.append(headLine);
+            }
 
+            // PrintWriter相比于PrintStream有auto flush功能
+            // PrintStream相比一般的OutputStream，提供了直接打印各种java对象的能力
+            PrintWriter pWriter = new PrintWriter(client.getOutputStream(), true);
+            pWriter.println(httpRequestString);
+            InputStream is = client.getInputStream();
 
+            int buffer_size = 1024;
 
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            byte[] buffer = new byte[buffer_size];
+            while(true){
+                int length = is.read(buffer);
+                if(length==-1) break;
+                // 缓冲区从Socket的InputStream读取length长度的字节；
+                // 而内部的baos只读取需要读取的字节数。
+                baos.write(buffer, 0, length);
+                if(length!=buffer_size) break;
+            }
+
+            result = baos.toByteArray();
+            client.close();
         } catch(IOException e){
             e.printStackTrace();
+            result = e.toString().getBytes(StandardCharsets.UTF_8);
         }
+        return result;
     }
-
 
 }
