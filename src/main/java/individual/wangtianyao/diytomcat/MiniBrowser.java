@@ -1,9 +1,18 @@
 package individual.wangtianyao.diytomcat;
 
+import com.sun.org.apache.xpath.internal.operations.String;
+
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.InetSocketAddress;
+import java.net.MalformedURLException;
+import java.net.Socket;
+import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 public class MiniBrowser {
     public static void main(String[] args) throws Exception{
@@ -51,11 +60,44 @@ public class MiniBrowser {
     }
 
     public static String getHttpString(String url, boolean gzip){
+        byte[] bytes = getHttpBytes(url, gzip);
+        return new String(bytes, StandardCharsets.UTF_8).trim();
+    }
 
+    public static String getHttpString(String url){
+        return getHttpString(url, false);
     }
 
     public static byte[] getHttpBytes(String url, boolean gzip){
+        byte[] result = null;
+        try{
+            URL u = new URL(url);
+            Socket client = new Socket();
+            int port = u.getPort();
+            if(port==-1) port=80;
 
+            InetSocketAddress inetSocketAddress = new InetSocketAddress(u.getHost(), port);
+            client.connect(inetSocketAddress, 1000);
+
+            // 将请求头格式化；
+            Map<String, String> requestHeaders = new HashMap<>();
+            requestHeaders.put("Host", u.getHost()+":"+port);
+            requestHeaders.put("Accept", "text/html");
+            requestHeaders.put("Connection", "close");
+            requestHeaders.put("User-Agent", "mini-browser/java 1.8");
+
+            if(gzip) requestHeaders.put("Accept-Encoding", "gzip");
+
+            String path = u.getPath();
+            if(path.length()==0) path="/";
+            String firstLine = "GET" + path + "HTTP/1.1\r\n";
+            StringBuffer httpRequestString = new StringBuffer();
+
+
+
+        } catch(IOException e){
+            e.printStackTrace();
+        }
     }
 
 
