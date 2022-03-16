@@ -1,21 +1,33 @@
 package individual.wangtianyao.diytomcat;
 
+import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.NetUtil;
 
+import cn.hutool.core.util.StrUtil;
 import individual.wangtianyao.diytomcat.http.Request;
 import individual.wangtianyao.diytomcat.http.Response;
 import individual.wangtianyao.diytomcat.http.Header;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class BootStrap {
 
     public static void main(String[] args){
+        Properties ps = System.getProperties();
+        Logger logInfo = Logger.getLogger("INFO");
+
+        for(Object key: ps.keySet()){
+            logInfo.log(Level.INFO, key.toString()+" ======> "+ ps.getProperty((String) key));
+        }
         try {
             int port = 810;
 
@@ -37,14 +49,36 @@ public class BootStrap {
                 Socket s = serverSocket.accept();
                 Request reqs = new Request(s);
 
+                // firefox的请求，会自动给null的uri加上 ‘/’
                 String requestString = reqs.getRequestString();
-                System.out.println("URI got from the Client Request: "+reqs.getUri()+"\r\n");
+                String uri = reqs.getUri();
+                System.out.println("URI got from the Client Request: "+ uri +"\r\n");
                 System.out.println("Input Information from Explorer: \r\n" + requestString+"\r\n");
 
+                // 以下进入基于uri解析的Response处理流程
+                // MiniBrowser会自动加上'/'
+                // uri理论上起码是‘/’，所以null类似于异常处理
+                if(uri==null) {
+                    // 之后可以添加欢迎页处理
+                    s.close();
+                    continue;
+                }
+
+                // 主页处理&静态资源处理
                 Response resp = new Response();
-                String response_head = "Content-Type:text/html\r\n\r\n";
-                String responseString = "Hello Diy Tomcat!";
-                resp.getWriter().println(responseString);
+                if(uri.equals("/")){
+                    String responseString = "Hello Diy Tomcat!";
+                    resp.getWriter().println(responseString);
+                }else{
+                    String fileName = uri.substring(1, uri.length());
+                    File file = FileUtil.file(Header.rootFolder, fileName);
+                    if(file.exists()){
+                        String fileContent = FileUtil.readUtf8String(file);
+                        resp.getWriter().println(fileContent);
+                    }else{
+                        resp.getWriter().println("404 File Not Found");
+                    }
+                }
 
                 // 依次在Socket的OS中写入200 Header，Optional Header，
                 OutputStream os = s.getOutputStream();
@@ -52,8 +86,11 @@ public class BootStrap {
                         + Header.getHeaderEntryLine(Header.contentType, resp.getContentType())
                         + "\r\n"
                         + resp.getBodyString();
+                /*
+                 * Socket的OutPutStream如果多次写，即使不flush，写满了也有可能自动发出。
+                 * 因而MiniBrowser只能一次性读取所有字节。
+                 */
                 os.write(rString.getBytes(StandardCharsets.UTF_8));
-
                 os.flush();
                 s.close();
             }

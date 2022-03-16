@@ -6,6 +6,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import individual.wangtianyao.diytomcat.MiniBrowser;
 
+import java.util.Map;
+import java.util.Properties;
+
 public class MiniBrowserTest {
     private static int port = 810;
     private static String ip = "localhost";
@@ -26,5 +29,13 @@ public class MiniBrowserTest {
         String html = MiniBrowser.getContentString("http://"+ip+":"+port+"/");
         System.out.println(html);
         Assert.assertEquals(html, "Hello Diy Tomcat!");
+    }
+
+    @Test
+    public void testStaticTestHtml(){
+        String html = MiniBrowser.getContentString("http://"+ip+":"+port+"/test.html");
+        System.out.println(html);
+
+
     }
 }

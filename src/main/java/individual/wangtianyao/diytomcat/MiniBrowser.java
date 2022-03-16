@@ -18,7 +18,7 @@ import java.util.Set;
  */
 public class MiniBrowser {
     public static void main(String[] args){
-        String url = "http://localhost:810/";
+        String url = "http://localhost:810";
         String contentString = getContentString(url, false);
         System.out.println(contentString + "\n\n\n");
 
