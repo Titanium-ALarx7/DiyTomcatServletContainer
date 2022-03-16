@@ -12,12 +12,12 @@ import java.nio.charset.StandardCharsets;
  * 承担了解析/存储 HttpRequest的容器
  * 与ServerSocket调用accept()方法，得到的已完成连接socket绑定
  */
-public class HttpRequest {
+public class Request {
     private String requestString;
     private String uri;
     private final Socket socket;
 
-    public HttpRequest(Socket socket) throws IOException{
+    public Request(Socket socket) throws IOException{
         this.socket = socket;
         parseHttpRequest();
         if(StrUtil.isEmpty(requestString)) return;

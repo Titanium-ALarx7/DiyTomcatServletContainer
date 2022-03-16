@@ -24,6 +24,7 @@ public class MiniBrowserTest {
     @Test
     public void testHelloTomcat(){
         String html = MiniBrowser.getContentString("http://"+ip+":"+port+"/");
+        System.out.println(html);
         Assert.assertEquals(html, "Hello Diy Tomcat!");
     }
 }
