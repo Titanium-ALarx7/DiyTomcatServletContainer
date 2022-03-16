@@ -1,5 +1,7 @@
 package individual.wangtianyao.diytomcat.test;
 
+import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.util.NetUtil;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -8,6 +10,10 @@ import individual.wangtianyao.diytomcat.MiniBrowser;
 
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 public class MiniBrowserTest {
     private static int port = 810;
@@ -37,5 +43,23 @@ public class MiniBrowserTest {
         System.out.println(html);
 
 
+    }
+
+    @Test
+    public void testTimeConsumingTask() throws InterruptedException{
+        ThreadPoolExecutor threadPool = new ThreadPoolExecutor(20, 20,
+                60, TimeUnit.SECONDS, new LinkedBlockingDeque<Runnable>(10));
+
+
+        TimeInterval timeInterval = DateUtil.timer();
+        for(int i=0;i<3;i++){
+            threadPool.execute(()->MiniBrowser.getContentString("http://"+ip+":"+port+"/wait1s.html"));
+        }
+        threadPool.shutdown();
+        threadPool.awaitTermination(1, TimeUnit.HOURS);
+
+        long duration = timeInterval.intervalMs();
+        System.out.println("Time cost for 3 request of wait1s.html:"+ duration +"Millis");
+        Assert.assertTrue(duration>=3000);
     }
 }

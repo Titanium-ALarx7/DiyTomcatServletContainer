@@ -78,6 +78,13 @@ public class BootStrap {
                     if(file.exists()){
                         String fileContent = FileUtil.readUtf8String(file);
                         resp.getWriter().println(fileContent);
+
+                        // 响应timeConsuming任务
+                        if(fileName.equals("wait1s.html")){
+                            try{Thread.sleep(1000);}
+                            catch(Exception e){e.printStackTrace();}
+                        }
+
                     }else{
                         resp.getWriter().println("404 File Not Found");
                     }
