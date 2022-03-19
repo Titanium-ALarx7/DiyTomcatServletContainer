@@ -52,7 +52,7 @@ public class MiniBrowserTest {
 
 
         TimeInterval timeInterval = DateUtil.timer();
-        for(int i=0;i<3;i++){
+        for(int i=0;i<20;i++){
             threadPool.execute(()->MiniBrowser.getContentString("http://"+ip+":"+port+"/wait1s.html"));
         }
         threadPool.shutdown();
@@ -60,6 +60,6 @@ public class MiniBrowserTest {
 
         long duration = timeInterval.intervalMs();
         System.out.println("Time cost for 3 request of wait1s.html: "+ duration +" Millis");
-        Assert.assertTrue(duration>=3000);
+        Assert.assertTrue(duration<=10000);
     }
 }

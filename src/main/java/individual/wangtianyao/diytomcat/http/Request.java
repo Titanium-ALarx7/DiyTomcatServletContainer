@@ -1,7 +1,9 @@
 package individual.wangtianyao.diytomcat.http;
 
 import cn.hutool.core.util.StrUtil;
+import individual.wangtianyao.diytomcat.BootStrap;
 import individual.wangtianyao.diytomcat.MiniBrowser;
+import individual.wangtianyao.diytomcat.catalina.Context;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -16,12 +18,16 @@ public class Request {
     private String requestString;
     private String uri;
     private final Socket socket;
+    private Context context;
 
     public Request(Socket socket) throws IOException{
         this.socket = socket;
         parseHttpRequest();
         if(StrUtil.isEmpty(requestString)) return;
         parseUri();
+        parseContext();
+        // 将uri对静态资源/abc/k.html拆分为 uri=“/k.html”; context.path="/abc";
+        if(!"/".equals(context.getPath())) this.uri=StrUtil.removePrefix(uri, this.context.getPath());
     }
 
     private void parseHttpRequest() throws IOException{
@@ -44,6 +50,16 @@ public class Request {
         this.uri = temp;
     }
 
+    private void parseContext(){
+        String path = StrUtil.subBetween(uri, "/", "/");
+        if(path==null) path="/";
+        else path = "/" + path;
+        this.context = BootStrap.contextMap.get(path);
+        // 因为path="/ROOT"的时候，返回结果为null；所以映射到“/”
+        System.out.println(this.context+ "   "+ BootStrap.contextMap.get("/"));
+        if(this.context==null) this.context = BootStrap.contextMap.get("/");
+    }
+
     public String getRequestString() {
         return requestString;
     }
@@ -52,4 +68,11 @@ public class Request {
         return uri;
     }
 
+    public Context getContext() {
+        return context;
+    }
+
+    public void setContext(Context context) {
+        this.context = context;
+    }
 }
