@@ -4,9 +4,11 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.NetUtil;
 import cn.hutool.system.SystemUtil;
 import individual.wangtianyao.diytomcat.catalina.Context;
+import individual.wangtianyao.diytomcat.catalina.Host;
 import individual.wangtianyao.diytomcat.http.Header;
 import individual.wangtianyao.diytomcat.http.Request;
 import individual.wangtianyao.diytomcat.http.Response;
+import individual.wangtianyao.diytomcat.util.ServerXMLUtil;
 import individual.wangtianyao.diytomcat.util.ThreadPoolUtil;
 
 import java.io.File;
@@ -16,18 +18,17 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class BootStrap {
-    // webApps文件夹的扫描容器
-    public static Map<String, Context> contextMap = new HashMap<>();
 
     public static void main(String[] args){
         logJVM();
 
-        scanContextsOnWebAppsFolder();
+        Host host = new Host();
 
         try {
             int port = 810;
@@ -54,7 +55,7 @@ public class BootStrap {
                     @Override
                     public void run(){
                         try {
-                            Request reqs = new Request(s);
+                            Request reqs = new Request(s, host);
                             Context context = reqs.getContext();
 
                             // firefox的请求，会自动给null的uri加上 ‘/’
@@ -127,29 +128,6 @@ public class BootStrap {
     }
 
 
-    // 加载WebApps文件夹下的所有文件夹到Context数据结构,并将Context放到contextMap里存储。
-    // Context一定是一个文件目录
-    private static void scanContextsOnWebAppsFolder(){
-        File[] folders = Header.webappsFolder.listFiles();
-        assert folders != null;
-        for(File folder:folders){
-            if(!folder.isDirectory()) continue;
-            loadContextFromWebAppsFolder(folder);
-        }
-    }
-
-    private static void loadContextFromWebAppsFolder(File folder){
-        // 将uri映射与context数据结构存储起来。
-        String path=folder.getName();
-        //webApps/ROOT用于存放主页
-        if("ROOT".equals(path)) path="/";
-        else path="/"+path;
-
-        String docBase = folder.getAbsolutePath();
-        Context context = new Context(path, docBase);
-
-        contextMap.put(context.getPath(), context);
-    }
 
     private static void logJVM(){
         Logger log = Logger.getAnonymousLogger();

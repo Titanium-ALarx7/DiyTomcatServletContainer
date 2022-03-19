@@ -62,4 +62,11 @@ public class MiniBrowserTest {
         System.out.println("Time cost for 3 request of wait1s.html: "+ duration +" Millis");
         Assert.assertTrue(duration<=10000);
     }
+
+    @Test
+    public void testServerXMLContextLoading(){
+        String html = MiniBrowser.getContentString("http://localhost:810"+"/b/Hello.html");
+        System.out.println(html);
+        Assert.assertTrue(html.equals("Hello Diy Tomcat from \"/b\"."));
+    }
 }

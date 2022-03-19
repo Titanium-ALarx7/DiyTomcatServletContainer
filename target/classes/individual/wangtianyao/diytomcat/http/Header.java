@@ -11,6 +11,8 @@ public class Header {
     // user.dir是项目文件夹的绝对路径，file第一个形参为parent
     public final static File webappsFolder = new File(SystemUtil.get("user.dir"),"webapps");
     public final static File rootFolder = new File(webappsFolder,"ROOT");
+    public final static File confFolder = new File(SystemUtil.get("user.dir"), "conf");
+    public final static File serverXMLFile = new File(confFolder, "server.xml");
 
     public static String getHeaderEntryLine(String headerKey, String headerValue){
         return headerKey+":"+headerValue+"\r\n";

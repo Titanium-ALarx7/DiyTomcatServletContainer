@@ -4,6 +4,7 @@ import cn.hutool.core.util.StrUtil;
 import individual.wangtianyao.diytomcat.BootStrap;
 import individual.wangtianyao.diytomcat.MiniBrowser;
 import individual.wangtianyao.diytomcat.catalina.Context;
+import individual.wangtianyao.diytomcat.catalina.Host;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,9 +20,11 @@ public class Request {
     private String uri;
     private final Socket socket;
     private Context context;
+    private Host host;
 
-    public Request(Socket socket) throws IOException{
+    public Request(Socket socket, Host host) throws IOException{
         this.socket = socket;
+        this.host=host;
         parseHttpRequest();
         if(StrUtil.isEmpty(requestString)) return;
         parseUri();
@@ -54,10 +57,10 @@ public class Request {
         String path = StrUtil.subBetween(uri, "/", "/");
         if(path==null) path="/";
         else path = "/" + path;
-        this.context = BootStrap.contextMap.get(path);
+        this.context = host.getContext(path);
         // 因为path="/ROOT"的时候，返回结果为null；所以映射到“/”
-        System.out.println(this.context+ "   "+ BootStrap.contextMap.get("/"));
-        if(this.context==null) this.context = BootStrap.contextMap.get("/");
+        System.out.println(this.context+ "   "+ host.getContext("/"));
+        if(this.context==null) this.context = host.getContext("/");
     }
 
     public String getRequestString() {
