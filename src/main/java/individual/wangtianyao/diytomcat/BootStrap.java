@@ -4,6 +4,7 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.NetUtil;
 import cn.hutool.system.SystemUtil;
 import individual.wangtianyao.diytomcat.catalina.Context;
+import individual.wangtianyao.diytomcat.catalina.Engine;
 import individual.wangtianyao.diytomcat.catalina.Host;
 import individual.wangtianyao.diytomcat.http.Header;
 import individual.wangtianyao.diytomcat.http.Request;
@@ -28,7 +29,8 @@ public class BootStrap {
     public static void main(String[] args){
         logJVM();
 
-        Host host = new Host();
+        Engine engine = Engine.getEngine();
+        Host host = engine.getDefaultHost();
 
         try {
             int port = 810;
@@ -55,7 +57,7 @@ public class BootStrap {
                     @Override
                     public void run(){
                         try {
-                            Request reqs = new Request(s, host);
+                            Request reqs = new Request(s, engine);
                             Context context = reqs.getContext();
 
                             // firefox的请求，会自动给null的uri加上 ‘/’

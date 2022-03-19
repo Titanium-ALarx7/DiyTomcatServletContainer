@@ -16,8 +16,8 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 public class MiniBrowserTest {
-    private static int port = 810;
-    private static String ip = "localhost";
+    private static final int port = 810;
+    private static final String ip = "localhost";
 
     @BeforeClass
     public static void beforeClass(){

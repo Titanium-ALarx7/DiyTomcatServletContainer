@@ -13,10 +13,12 @@ import java.util.Map;
 public class Host {
     private final String name;
     private Map<String, Context> contextMap;
+    private Engine engine;
 
-    public Host(){
+    public Host(String name, Engine engine){
         this.contextMap = new HashMap<>();
-        this.name = ServerXMLUtil.getHostName();
+        this.name = name;
+        this.engine = engine;
 
         scanContextsOnWebAppsFolder();
         scanContextsInServerXML();
@@ -28,6 +30,10 @@ public class Host {
 
     public Context getContext(String path) {
         return contextMap.get(path);
+    }
+
+    public Engine getEngine() {
+        return engine;
     }
 
     private void addContextToContextMap(String key, Context context){
