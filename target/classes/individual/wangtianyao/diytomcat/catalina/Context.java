@@ -16,7 +16,8 @@ public class Context {
         this.docBase = docBase;
         Logger log = Logger.getLogger("context-info");
         log.log(Level.INFO, "Deploying web application directory "+this.docBase);
-        log.log(Level.INFO, "Deployment of web application directory "+this.docBase+ " has finished in"+timer.intervalMs());
+        log.log(Level.INFO, "Deployment of web application directory "+
+                this.docBase+ " has finished in "+timer.intervalMs()+" Millis");
     }
 
     public String getPath() {
