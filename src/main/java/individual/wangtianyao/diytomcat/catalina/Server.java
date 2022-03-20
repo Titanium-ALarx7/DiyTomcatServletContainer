@@ -2,6 +2,7 @@ package individual.wangtianyao.diytomcat.catalina;
 
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.NetUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.system.SystemUtil;
 import individual.wangtianyao.diytomcat.http.Header;
 import individual.wangtianyao.diytomcat.http.Request;
@@ -77,53 +78,40 @@ public class Server {
                         // MiniBrowser会自动加上'/'
                         // uri理论上起码是‘/’，所以null类似于异常处理
                         if (uri == null) {
-                            // 之后可以添加欢迎页处理
                             s.close();
                             return;
                         }
 
                         // 主页处理&静态资源处理
                         Response resp = new Response();
-                        if (uri.equals("/")) {
-                            String responseString = "Hello Diy Tomcat!";
-                            resp.getWriter().println(responseString);
-                        } else {
-                            String fileName = uri.substring(1, uri.length());
+
+                        // 解析uri，生成对应状态码；
+                        if (uri.equals("/")) handleWelcomePage(s, resp);
+                        else {
                             // 在Diy Tomcat中，所有静态资源默认根目录为/webApps/ROOT;
                             // 即Header.rootFolder File类实例
+                            String fileName = uri.substring(1, uri.length());
                             File file = FileUtil.file(context.getDocBase(), fileName);
-                            if (file.exists()) {
-                                String fileContent = FileUtil.readUtf8String(file);
-                                resp.getWriter().println(fileContent);
 
+                            if (file.exists()) {
                                 // 响应timeConsuming任务
                                 if (fileName.equals("wait1s.html")) {
-                                    try {
-                                        Thread.sleep(1000);
-                                    } catch (Exception e) {
-                                        e.printStackTrace();
-                                    }
+                                    try {Thread.sleep(1000);}
+                                    catch (Exception e) {e.printStackTrace();}
                                 }
-                            } else resp.getWriter().println("404 File Not Found");
+
+                                String fileContent = FileUtil.readUtf8String(file);
+                                resp.getWriter().println(fileContent);
+                                handleResponse200(s, resp);
+                            }else handle404(s, uri);
                         }
 
-                        // 依次在Socket的OS中写入200 Header，Optional Header，
-                        OutputStream os = s.getOutputStream();
-                        String rString = Header.ResponseHeader200
-                                + Header.getHeaderEntryLine(Header.contentType, resp.getContentType())
-                                + "\r\n"
-                                + resp.getBodyString();
-                        /*
-                         * Socket的OutPutStream如果多次写，即使不flush，写满了也有可能自动发出。
-                         * 因而MiniBrowser只能一次性读取所有字节。
-                         */
-                        os.write(rString.getBytes(StandardCharsets.UTF_8));
-                        os.flush();
-                        s.close();
                     } catch (Exception e) {
                         e.printStackTrace();
+                    } finally{
+                        try{if(!s.isClosed()) s.close();}
+                        catch(IOException e){e.printStackTrace();}
                     }
-
                 };
 
                 ThreadPoolUtil.run(task);
@@ -133,6 +121,38 @@ public class Server {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    protected void handleWelcomePage(Socket s, Response resp) throws IOException{
+        String responseString = "Hello Diy Tomcat!";
+        resp.getWriter().println(responseString);
+        OutputStream os = s.getOutputStream();
+        String respMessage = getResponseMessage200(resp);
+        os.write(respMessage.getBytes(StandardCharsets.UTF_8));
+        os.flush();
+    }
+
+    protected void handleResponse200(Socket s, Response resp) throws IOException{
+        OutputStream os = s.getOutputStream();
+        String respMessage = getResponseMessage200(resp);
+        os.write(respMessage.getBytes(StandardCharsets.UTF_8));
+        os.flush();
+    }
+
+    protected void handle404(Socket s, String uri) throws IOException{
+        OutputStream os = s.getOutputStream();
+        String responseBody = StrUtil.format(Header.page404, uri, uri);
+        String responseMessage = Header.ResponseHeader404 + responseBody;
+        byte[] bytes = responseMessage.getBytes(StandardCharsets.UTF_8);
+        os.write(bytes);
+        os.flush();
+    }
+
+    protected String getResponseMessage200(Response resp){
+        return  Header.ResponseHeader200
+                + Header.getHeaderEntryLine(Header.contentType, resp.getContentType())
+                + "\r\n"
+                + resp.getBodyString();
     }
 
 }

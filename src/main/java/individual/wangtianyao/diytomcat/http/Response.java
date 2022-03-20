@@ -11,9 +11,9 @@ import java.nio.charset.StandardCharsets;
  */
 public class Response {
 
-    private StringWriter stringWriter;
-    private PrintWriter writer;
-    private String contentType;
+    private final StringWriter stringWriter;
+    private final PrintWriter writer;
+    private final String contentType;
 
 
     public PrintWriter getWriter() {

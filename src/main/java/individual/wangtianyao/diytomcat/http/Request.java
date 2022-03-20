@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 
 /*
  * 承担了解析/存储 HttpRequest的容器
@@ -56,7 +57,7 @@ public class Request {
         String path = StrUtil.subBetween(uri, "/", "/");
         if(path==null) path="/";
         else path = "/" + path;
-        this.context = service.getEngine().getDefaultHost().getContext(path);
+        this.context = Objects.requireNonNull(service.getEngine().getDefaultHost()).getContext(path);
         // 因为path="/ROOT"的时候，返回结果为null；所以映射到“/”
         System.out.println(this.context+ "   "+ service.getEngine().getDefaultHost().getContext("/"));
         if(this.context==null) this.context = service.getEngine().getDefaultHost().getContext("/");
