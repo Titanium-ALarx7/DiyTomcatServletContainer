@@ -2,15 +2,15 @@ package individual.wangtianyao.diytomcat.test;
 
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.TimeInterval;
+import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.NetUtil;
+import cn.hutool.core.util.StrUtil;
+import individual.wangtianyao.diytomcat.http.Header;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import individual.wangtianyao.diytomcat.MiniBrowser;
 
-import java.util.Map;
-import java.util.Properties;
-import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -69,4 +69,25 @@ public class MiniBrowserTest {
         System.out.println(html);
         Assert.assertTrue(html.equals("Hello Diy Tomcat from \"/b\"."));
     }
+
+    @Test
+    public void test404(){
+        String html = MiniBrowser.getContentString("http://localhost:810"+"/I'dLikeA404Page");
+        System.out.println(html);
+        Assert.assertEquals(html, StrUtil.format(Header.page404, "/I'dLikeA404Page", "/I'dLikeA404Page"));
+    }
+
+    @Test
+    public void test500(){
+        String resp = MiniBrowser.getHttpString("http://localhost:810"+"/500");
+        Assert.assertTrue(StrUtil.containsAny(resp, "HTTP/1.1 500 Internal Server Error"));
+    }
+
+    @Test
+    public void testPicturesIndex() {
+        String html = MiniBrowser.getContentString("http://localhost:810"+ "/Pictures/");
+        Assert.assertTrue(StrUtil.containsAny(html, "Maybe you want some pics?\n" ));
+    }
+
+
 }

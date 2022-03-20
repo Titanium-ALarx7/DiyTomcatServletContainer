@@ -30,7 +30,10 @@ public class Request {
         parseUri();
         parseContext();
         // 将uri对静态资源/abc/k.html拆分为 uri=“/k.html”; context.path="/abc";
-        if(!"/".equals(context.getPath())) this.uri=StrUtil.removePrefix(uri, this.context.getPath());
+        if(!"/".equals(context.getPath())){
+            this.uri=StrUtil.removePrefix(uri, this.context.getPath());
+            if(this.uri.equals("")) uri = "/";
+        }
     }
 
     private void parseHttpRequest() throws IOException{
@@ -54,12 +57,12 @@ public class Request {
     }
 
     private void parseContext(){
+        this.context = Objects.requireNonNull(service.getEngine().getDefaultHost()).getContext(this.uri);
+        if(context!=null) return;
         String path = StrUtil.subBetween(uri, "/", "/");
         if(path==null) path="/";
-        else path = "/" + path;
+        else path = "/"+path;
         this.context = Objects.requireNonNull(service.getEngine().getDefaultHost()).getContext(path);
-        // 因为path="/ROOT"的时候，返回结果为null；所以映射到“/”
-        System.out.println(this.context+ "   "+ service.getEngine().getDefaultHost().getContext("/"));
         if(this.context==null) this.context = service.getEngine().getDefaultHost().getContext("/");
     }
 

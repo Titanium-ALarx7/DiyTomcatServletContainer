@@ -8,6 +8,7 @@ import individual.wangtianyao.diytomcat.http.Header;
 import individual.wangtianyao.diytomcat.http.Request;
 import individual.wangtianyao.diytomcat.http.Response;
 import individual.wangtianyao.diytomcat.util.ThreadPoolUtil;
+import individual.wangtianyao.diytomcat.util.WebXMLUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -74,19 +75,13 @@ public class Server {
                         System.out.println("URI got from the Client Request: " + uri + "\r\n");
                         System.out.println("Input Information from Explorer: \r\n" + requestString + "\r\n");
 
-                        // 以下进入基于uri解析的Response处理流程
-                        // MiniBrowser会自动加上'/'
-                        // uri理论上起码是‘/’，所以null类似于异常处理
-                        if (uri == null) {
-                            s.close();
-                            return;
-                        }
-
                         // 主页处理&静态资源处理
                         Response resp = new Response();
 
                         // 解析uri，生成对应状态码；
-                        if (uri.equals("/")) handleWelcomePage(s, resp);
+                        if (uri.equals("/")) handleWelcomePage(s, resp, reqs);
+                        else if(uri.equals("/500")) throw new RuntimeException(
+                                "This is a deliberately created 500 exception to test error exception.");
                         else {
                             // 在Diy Tomcat中，所有静态资源默认根目录为/webApps/ROOT;
                             // 即Header.rootFolder File类实例
@@ -107,7 +102,7 @@ public class Server {
                         }
 
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        handle500(s, e);
                     } finally{
                         try{if(!s.isClosed()) s.close();}
                         catch(IOException e){e.printStackTrace();}
@@ -123,9 +118,13 @@ public class Server {
         }
     }
 
-    protected void handleWelcomePage(Socket s, Response resp) throws IOException{
-        String responseString = "Hello Diy Tomcat!";
-        resp.getWriter().println(responseString);
+    protected void handleWelcomePage(Socket s, Response resp, Request reqs) throws IOException{
+        String fileName = WebXMLUtil.getWelcomeFileName(reqs.getContext());
+        System.out.println("uri: "+fileName+"\r\nAbsolute Context"+reqs.getContext().getDocBase());
+
+        File f = FileUtil.file(reqs.getContext().getDocBase(), fileName);
+        String html = FileUtil.readUtf8String(f);
+        resp.getWriter().println(html);
         OutputStream os = s.getOutputStream();
         String respMessage = getResponseMessage200(resp);
         os.write(respMessage.getBytes(StandardCharsets.UTF_8));
@@ -141,14 +140,43 @@ public class Server {
 
     protected void handle404(Socket s, String uri) throws IOException{
         OutputStream os = s.getOutputStream();
+        Response resp = new Response();
         String responseBody = StrUtil.format(Header.page404, uri, uri);
-        String responseMessage = Header.ResponseHeader404 + responseBody;
+        String responseMessage = Header.ResponseHeader404
+                + Header.getHeaderEntryLine(Header.contentType, resp.getContentType())
+                + "\r\n" + responseBody;
+        System.out.println(responseMessage);
         byte[] bytes = responseMessage.getBytes(StandardCharsets.UTF_8);
         os.write(bytes);
         os.flush();
     }
 
-    protected String getResponseMessage200(Response resp){
+    protected void handle500(Socket s, Exception e){
+        try {
+            StackTraceElement[] stes = e.getStackTrace();
+            StringBuilder sb = new StringBuilder();
+            sb.append(e.toString());
+            for (StackTraceElement ste : stes) {
+                sb.append("\t");
+                sb.append(ste.toString());
+                sb.append("\r\n");
+            }
+            String msg = e.getMessage();
+            if (msg != null && msg.length() > 20) msg = msg.substring(0, 19);
+
+            OutputStream os = s.getOutputStream();
+            Response resp = new Response();
+            String responseBody = StrUtil.format(Header.page500, msg, e.toString(), sb.toString());
+            String responseMessage = Header.ResponseHeader500
+                    + Header.getHeaderEntryLine(Header.contentType, resp.getContentType())
+                    + "\r\n" + responseBody;
+            byte[] bytes = responseMessage.getBytes(StandardCharsets.UTF_8);
+            os.write(bytes);
+            os.flush();
+        }catch (IOException e2){e2.printStackTrace();}
+    }
+
+    private String getResponseMessage200(Response resp){
         return  Header.ResponseHeader200
                 + Header.getHeaderEntryLine(Header.contentType, resp.getContentType())
                 + "\r\n"
