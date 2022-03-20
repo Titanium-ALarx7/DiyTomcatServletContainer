@@ -6,20 +6,26 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 
 public class Engine {
-    private String defaultHost;
-    private List<Host> hosts;
+    private final String defaultHost;
+    private final List<Host> hosts;
     private static Engine engine;
+    private final Service service;
 
-    public static Engine getEngine() {
+    public static Engine getEngine(Service s) {
         if(engine!=null) return engine;
-        engine = new Engine();
+        engine = new Engine(s);
         return engine;
     }
 
-    private Engine(){
+    private Engine(Service s){
+        this.service= s;
         this.defaultHost = ServerXMLUtil.getEngineDefaultHost();
         this.hosts = ServerXMLUtil.getHosts(this);
         checkDefault();
+    }
+
+    public Service getService() {
+        return service;
     }
 
     private void checkDefault(){

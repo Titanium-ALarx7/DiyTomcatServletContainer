@@ -1,11 +1,9 @@
 package individual.wangtianyao.diytomcat.http;
 
 import cn.hutool.core.util.StrUtil;
-import individual.wangtianyao.diytomcat.BootStrap;
 import individual.wangtianyao.diytomcat.MiniBrowser;
 import individual.wangtianyao.diytomcat.catalina.Context;
-import individual.wangtianyao.diytomcat.catalina.Engine;
-import individual.wangtianyao.diytomcat.catalina.Host;
+import individual.wangtianyao.diytomcat.catalina.Service;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,11 +19,11 @@ public class Request {
     private String uri;
     private final Socket socket;
     private Context context;
-    private final Engine engine;
+    private final Service service;
 
-    public Request(Socket socket, Engine engine) throws IOException{
+    public Request(Socket socket, Service service) throws IOException{
         this.socket = socket;
-        this.engine=engine;
+        this.service=service;
         parseHttpRequest();
         if(StrUtil.isEmpty(requestString)) return;
         parseUri();
@@ -58,10 +56,10 @@ public class Request {
         String path = StrUtil.subBetween(uri, "/", "/");
         if(path==null) path="/";
         else path = "/" + path;
-        this.context = engine.getDefaultHost().getContext(path);
+        this.context = service.getEngine().getDefaultHost().getContext(path);
         // 因为path="/ROOT"的时候，返回结果为null；所以映射到“/”
-        System.out.println(this.context+ "   "+ engine.getDefaultHost().getContext("/"));
-        if(this.context==null) this.context = engine.getDefaultHost().getContext("/");
+        System.out.println(this.context+ "   "+ service.getEngine().getDefaultHost().getContext("/"));
+        if(this.context==null) this.context = service.getEngine().getDefaultHost().getContext("/");
     }
 
     public String getRequestString() {

@@ -31,11 +31,11 @@ public class ServerXMLUtil {
         return result;
     }
 
-    public static String getHostName(){
+    public static String getServiceName(){
         String xml = FileUtil.readUtf8String(Header.serverXMLFile);
         Document d = Jsoup.parse(xml);
-        Element host = d.select("host").first();
-        return host.attr("name");
+        Element service = d.select("Service").first();
+        return service.attr("name");
     }
 
     public static String getEngineDefaultHost() {
