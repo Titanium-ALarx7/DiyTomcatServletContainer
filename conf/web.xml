@@ -5,4 +5,31 @@
         <welcome-file>index.htm</welcome-file>
         <welcome-file>index.jsp</welcome-file>
     </welcome-file-list>
+
+    <mime-mappings>
+        <mime-mapping>
+            <suffix>pdf</suffix>
+            <mime-type>application/pdf</mime-type>
+        </mime-mapping>
+        <mime-mapping>
+            <suffix>txt</suffix>
+            <mime-type>text/plain</mime-type>
+        </mime-mapping>
+        <mime-mapping>
+            <suffix>jpg</suffix>
+            <mime-type>image/jpeg</mime-type>
+        </mime-mapping>
+        <mime-mapping>
+            <suffix>jpeg</suffix>
+            <mime-type>image/jpeg</mime-type>
+        </mime-mapping>
+        <mime-mapping>
+            <suffix>png</suffix>
+            <mime-type>image/png</mime-type>
+        </mime-mapping>
+        <mime-mapping>
+            <suffix>gif</suffix>
+            <mime-type>image/gif</mime-type>
+        </mime-mapping>
+    </mime-mappings>
 </web-app>

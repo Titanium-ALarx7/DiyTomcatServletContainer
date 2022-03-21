@@ -57,8 +57,12 @@ public class Request {
     }
 
     private void parseContext(){
+        // Context为一个@RequestMapping与dir的绝对路径的映射
+        // 先查看该uri是否直接映射一个context，有则返回
         this.context = Objects.requireNonNull(service.getEngine().getDefaultHost()).getContext(this.uri);
         if(context!=null) return;
+
+        // 如果没有现成context，就把uri按照dir + fileName静态资源的形式剥离。
         String path = StrUtil.subBetween(uri, "/", "/");
         if(path==null) path="/";
         else path = "/"+path;

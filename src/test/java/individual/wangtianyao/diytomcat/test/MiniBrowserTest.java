@@ -86,7 +86,8 @@ public class MiniBrowserTest {
     @Test
     public void testPicturesIndex() {
         String html = MiniBrowser.getContentString("http://localhost:810"+ "/Pictures/");
-        Assert.assertTrue(StrUtil.containsAny(html, "Maybe you want some pics?\n" ));
+        System.out.println(html);
+        Assert.assertTrue(StrUtil.containsAny(html, "Maybe you want some pics?" ));
     }
 
 

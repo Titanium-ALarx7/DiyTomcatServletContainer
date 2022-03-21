@@ -13,7 +13,7 @@ public class Response {
 
     private final StringWriter stringWriter;
     private final PrintWriter writer;
-    private final String contentType;
+    private String contentType;
 
 
     public PrintWriter getWriter() {
@@ -27,6 +27,7 @@ public class Response {
     public Response(){
         this.stringWriter= new StringWriter();
         this.writer = new PrintWriter(stringWriter);
+        // set default content-type in init()
         this.contentType = "text/html";
     }
 
@@ -39,4 +40,7 @@ public class Response {
         return content.getBytes(StandardCharsets.UTF_8);
     }
 
+    public void setContentType(String contentType) {
+        this.contentType = contentType;
+    }
 }

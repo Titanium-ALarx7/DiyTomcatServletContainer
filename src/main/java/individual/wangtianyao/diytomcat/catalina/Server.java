@@ -69,9 +69,10 @@ public class Server {
                         Request reqs = new Request(s, service);
                         Context context = reqs.getContext();
 
-                        // firefox的请求，会自动给null的uri加上 ‘/’
+
                         String requestString = reqs.getRequestString();
                         String uri = reqs.getUri();
+                        // reqs类的解析方式，uri为fileName或"/"; dir存储于context中
                         System.out.println("URI got from the Client Request: " + uri + "\r\n");
                         System.out.println("Input Information from Explorer: \r\n" + requestString + "\r\n");
 
@@ -83,6 +84,8 @@ public class Server {
                         else if(uri.equals("/500")) throw new RuntimeException(
                                 "This is a deliberately created 500 exception to test error exception.");
                         else {
+                            // 显然，该分支之后应该被通用化为静态资源/文件访问
+
                             // 在Diy Tomcat中，所有静态资源默认根目录为/webApps/ROOT;
                             // 即Header.rootFolder File类实例
                             String fileName = uri.substring(1, uri.length());
@@ -94,7 +97,9 @@ public class Server {
                                     try {Thread.sleep(1000);}
                                     catch (Exception e) {e.printStackTrace();}
                                 }
-
+                                String suffix = FileUtil.extName(file);
+                                String mimeType = WebXMLUtil.getMimeType(suffix);
+                                resp.setContentType(mimeType);
                                 String fileContent = FileUtil.readUtf8String(file);
                                 resp.getWriter().println(fileContent);
                                 handleResponse200(s, resp);
@@ -120,7 +125,7 @@ public class Server {
 
     protected void handleWelcomePage(Socket s, Response resp, Request reqs) throws IOException{
         String fileName = WebXMLUtil.getWelcomeFileName(reqs.getContext());
-        System.out.println("uri: "+fileName+"\r\nAbsolute Context"+reqs.getContext().getDocBase());
+        //System.out.println("uri: "+fileName+"\r\nAbsolute Context"+reqs.getContext().getDocBase());
 
         File f = FileUtil.file(reqs.getContext().getDocBase(), fileName);
         String html = FileUtil.readUtf8String(f);

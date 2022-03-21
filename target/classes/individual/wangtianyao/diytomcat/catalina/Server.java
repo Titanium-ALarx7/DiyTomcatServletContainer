@@ -69,9 +69,10 @@ public class Server {
                         Request reqs = new Request(s, service);
                         Context context = reqs.getContext();
 
-                        // firefox的请求，会自动给null的uri加上 ‘/’
+
                         String requestString = reqs.getRequestString();
                         String uri = reqs.getUri();
+                        // reqs类的解析方式，uri为fileName或"/"; dir存储于context中
                         System.out.println("URI got from the Client Request: " + uri + "\r\n");
                         System.out.println("Input Information from Explorer: \r\n" + requestString + "\r\n");
 
@@ -94,7 +95,9 @@ public class Server {
                                     try {Thread.sleep(1000);}
                                     catch (Exception e) {e.printStackTrace();}
                                 }
-
+                                String suffix = FileUtil.extName(file);
+                                String mimeType = WebXMLUtil.getMimeType(suffix);
+                                resp.setContentType(mimeType);
                                 String fileContent = FileUtil.readUtf8String(file);
                                 resp.getWriter().println(fileContent);
                                 handleResponse200(s, resp);
@@ -120,7 +123,7 @@ public class Server {
 
     protected void handleWelcomePage(Socket s, Response resp, Request reqs) throws IOException{
         String fileName = WebXMLUtil.getWelcomeFileName(reqs.getContext());
-        System.out.println("uri: "+fileName+"\r\nAbsolute Context"+reqs.getContext().getDocBase());
+        //System.out.println("uri: "+fileName+"\r\nAbsolute Context"+reqs.getContext().getDocBase());
 
         File f = FileUtil.file(reqs.getContext().getDocBase(), fileName);
         String html = FileUtil.readUtf8String(f);
