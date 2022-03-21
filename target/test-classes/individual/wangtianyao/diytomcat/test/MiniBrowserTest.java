@@ -34,7 +34,7 @@ public class MiniBrowserTest {
     public void testHelloTomcat(){
         String html = MiniBrowser.getContentString("http://"+ip+":"+port+"/");
         System.out.println(html);
-        Assert.assertEquals(html, "Hello Diy Tomcat!");
+        Assert.assertEquals(html, "\"Hello Diy Tomcat!\"");
     }
 
     @Test
@@ -93,6 +93,12 @@ public class MiniBrowserTest {
     @Test
     public void testPicJpg(){
         String html = MiniBrowser.getContentString("http://localhost:810"+ "/Pictures/pic1.jpg");
+    }
+
+    @Test
+    public void testHelloServlet(){
+        String html = MiniBrowser.getContentString("http://localhost:810"+ "/hello");
+        Assert.assertEquals(html, "Hello DIY Tomcat! \r\n  \t\t-----From HelloWorldServlet");
     }
 
 

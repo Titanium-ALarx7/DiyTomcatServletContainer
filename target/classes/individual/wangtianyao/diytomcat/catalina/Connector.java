@@ -65,9 +65,8 @@ public class Connector implements Runnable{
                     try{reqs = new Request(s, service);}
                     catch(IOException e){e.printStackTrace();};
                     assert reqs != null;
-                    Context context = reqs.getContext();
-                    Response resp = new Response();
 
+                    Response resp = new Response();
                     HttpProcessor pro = new HttpProcessor();
                     pro.execute(s, reqs, resp);
                 };

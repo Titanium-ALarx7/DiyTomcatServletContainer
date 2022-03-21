@@ -7,6 +7,7 @@ import individual.wangtianyao.diytomcat.http.Header;
 import individual.wangtianyao.diytomcat.http.Request;
 import individual.wangtianyao.diytomcat.http.Response;
 import individual.wangtianyao.diytomcat.util.WebXMLUtil;
+import individual.wangtianyao.diytomcat.webservlet.HelloWorldServlet;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,32 +26,43 @@ public class HttpProcessor {
 
 
             // 解析uri，生成对应状态码
-            if (uri.equals("/")) handleWelcomePage(s, resp, reqs);
-            else if(uri.equals("/500")) throw new RuntimeException(
-                    "This is a deliberately created 500 exception to test error exception.");
-            else {
-                // 显然，该分支之后应该被通用化为静态资源/文件访问
+            switch (uri) {
+                case "/":
+                    handleWelcomePage(s, resp, reqs);
+                    break;
+                case "/hello":
+                    HelloWorldServlet helloServlet = new HelloWorldServlet();
+                    helloServlet.doGet(reqs, resp);
+                    break;
+                case "/500":
+                    throw new RuntimeException(
+                            "This is a deliberately created 500 exception to test error exception.");
+                default:
+                    // 显然，该分支之后应该被通用化为静态资源/文件访问
 
-                // 在Diy Tomcat中，所有静态资源默认根目录为/webApps/ROOT;
-                // 即Header.rootFolder File类实例
-                String fileName = uri.substring(1, uri.length());
-                File file = FileUtil.file(reqs.getContext().getDocBase(), fileName);
+                    // 在Diy Tomcat中，所有静态资源默认根目录为/webApps/ROOT;
+                    // 即Header.rootFolder File类实例
+                    String fileName = uri.substring(1, uri.length());
+                    File file = FileUtil.file(reqs.getContext().getDocBase(), fileName);
 
-                if (file.exists()) {
-                    // 响应timeConsuming任务
-                    if (fileName.equals("wait1s.html")) {
-                        try {Thread.sleep(1000);}
-                        catch (Exception e) {e.printStackTrace();}
-                    }
-                    String suffix = FileUtil.extName(file);
-                    String mimeType = WebXMLUtil.getMimeType(suffix);
-                    resp.setContentType(mimeType);
-                    byte[] fileContent = FileUtil.readBytes(file);
-                    resp.setBody(fileContent);
-                    handleResponse200(s, resp);
-                }else handle404(s, uri);
+                    if (file.exists()) {
+                        // 响应timeConsuming任务
+                        if (fileName.equals("wait1s.html")) {
+                            try {
+                                Thread.sleep(1000);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+                        String suffix = FileUtil.extName(file);
+                        String mimeType = WebXMLUtil.getMimeType(suffix);
+                        resp.setContentType(mimeType);
+                        byte[] fileContent = FileUtil.readBytes(file);
+                        resp.setBody(fileContent);
+                    } else handle404(s, uri);
+                    break;
             }
-
+            handleResponse200(s, resp);
         } catch (Exception e) {
             handle500(s, e);
         } finally{
