@@ -1,9 +1,7 @@
 package individual.wangtianyao.diytomcat.util;
 
 import cn.hutool.core.io.FileUtil;
-import individual.wangtianyao.diytomcat.catalina.Context;
-import individual.wangtianyao.diytomcat.catalina.Engine;
-import individual.wangtianyao.diytomcat.catalina.Host;
+import individual.wangtianyao.diytomcat.catalina.*;
 import individual.wangtianyao.diytomcat.http.Header;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -54,6 +52,20 @@ public class ServerXMLUtil {
             String name = e.attr("name");
             Host host = new Host(name, engine);
             result.add(host);
+        }
+        return result;
+    }
+
+    public static List<Connector> getConnectors(Service service){
+        List<Connector> result = new ArrayList<>();
+        String xml = FileUtil.readUtf8String(Header.serverXMLFile);
+        Document d = Jsoup.parse(xml);
+        Elements es = d.select("Connector");
+        for(Element e:es){
+            int port = Integer.parseInt(e.attr("port"));
+            Connector c = new Connector(service);
+            c.setPort(port);
+            result.add(c);
         }
         return result;
     }

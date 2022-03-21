@@ -38,7 +38,7 @@ public class Request {
 
     private void parseHttpRequest() throws IOException{
         InputStream is = this.socket.getInputStream();
-        byte[] bytes = MiniBrowser.readBytes(is);
+        byte[] bytes = MiniBrowser.readBytes(is, false);
         this.requestString = new String(bytes, StandardCharsets.UTF_8);
     }
 

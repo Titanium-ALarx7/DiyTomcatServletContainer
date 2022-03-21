@@ -90,5 +90,10 @@ public class MiniBrowserTest {
         Assert.assertTrue(StrUtil.containsAny(html, "Maybe you want some pics?" ));
     }
 
+    @Test
+    public void testPicJpg(){
+        String html = MiniBrowser.getContentString("http://localhost:810"+ "/Pictures/pic1.jpg");
+    }
+
 
 }

@@ -133,7 +133,7 @@ public class MiniBrowser {
         return result;
     }
 
-    public static byte[] readBytes(InputStream is, int buffer_size) throws IOException{
+    public static byte[] readBytes(InputStream is, int buffer_size, boolean fully) throws IOException{
         byte[] buffer = new byte[buffer_size];
         // 见源码ByteArrayOS的std-out为一个ByteArray，可通过toXX()取出
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -149,13 +149,13 @@ public class MiniBrowser {
             if(length==-1) break;
 
             baos.write(buffer, 0, length);
-            if(length!=buffer_size) break;
+            if(!fully && length!=buffer_size) break;
         }
         return baos.toByteArray();
     }
 
-    public static byte[] readBytes(InputStream is) throws IOException{
-        return readBytes(is, 1024);
+    public static byte[] readBytes(InputStream is, boolean fully) throws IOException{
+        return readBytes(is, 1024, fully);
     }
 
 }
