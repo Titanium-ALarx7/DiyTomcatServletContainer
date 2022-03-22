@@ -15,10 +15,29 @@ public class Response extends BaseResponse {
     private final PrintWriter writer;
     private String contentType;
     private byte[] body;
+    private int status;
 
-
+    @Override
     public PrintWriter getWriter() {
         return writer;
+    }
+
+    @Override
+    public void setContentType(String contentType) {
+        this.contentType = contentType;
+    }
+
+    @Override
+    public String getContentType(){return this.contentType;}
+
+    @Override
+    public int getStatus() {
+        return status;
+    }
+
+    @Override
+    public void setStatus(int status) {
+        this.status = status;
     }
 
     public Response(){
@@ -32,11 +51,7 @@ public class Response extends BaseResponse {
         return stringWriter.toString();
     }
 
-    public void setContentType(String contentType) {
-        this.contentType = contentType;
-    }
 
-    public String getContentType(){return this.contentType;}
 
     public byte[] getBody(){
         if(this.body==null) {

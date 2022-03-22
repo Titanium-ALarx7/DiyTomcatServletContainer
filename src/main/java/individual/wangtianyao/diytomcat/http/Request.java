@@ -21,6 +21,7 @@ public class Request extends BaseRequest {
     private Context context;
     private final Socket socket;
     private final Service service;
+    private String method;
 
     public Request(Socket socket, Service service) throws IOException{
         this.socket = socket;
@@ -28,6 +29,7 @@ public class Request extends BaseRequest {
         parseHttpRequest();
         if(StrUtil.isEmpty(requestString)) return;
         parseUri();
+        parseMethod();
         parseContext();
         // 将uri对静态资源/abc/k.html拆分为 uri=“/k.html”; context.path="/abc";
         if(!"/".equals(context.getPath())){
@@ -69,6 +71,15 @@ public class Request extends BaseRequest {
         this.context = Objects.requireNonNull(service.getEngine().getDefaultHost()).getContext(path);
         // 如果context解析不存在，默认context为ROOT文件夹下
         if(this.context==null) this.context = service.getEngine().getDefaultHost().getContext("/");
+    }
+
+    private void parseMethod(){
+        this.method = this.requestString.split("\r\n")[0].split(" ")[0];
+    }
+
+    @Override
+    public String getMethod() {
+        return method;
     }
 
     public String getRequestString() {

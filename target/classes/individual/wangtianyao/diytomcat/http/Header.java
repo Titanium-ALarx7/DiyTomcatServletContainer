@@ -10,6 +10,10 @@ public class Header {
     public static final String ResponseHeader404="HTTP/1.1 404 Not Found\r\n";
     public static final String ResponseHeader500 = "HTTP/1.1 500 Internal Server Error\r\n";
 
+    public static final int CODE_200 = 200;
+    public static final int CODE_302 = 302;
+    public static final int CODE_404 = 404;
+    public static final int CODE_500 = 500;
 
     // user.dir是项目文件夹的绝对路径，file第一个形参为parent
     public final static File webappsFolder = new File(SystemUtil.get("user.dir"),"webapps");

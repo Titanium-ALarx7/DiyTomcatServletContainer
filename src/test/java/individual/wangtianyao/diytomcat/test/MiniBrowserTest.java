@@ -2,7 +2,6 @@ package individual.wangtianyao.diytomcat.test;
 
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.TimeInterval;
-import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.NetUtil;
 import cn.hutool.core.util.StrUtil;
 import individual.wangtianyao.diytomcat.http.Header;

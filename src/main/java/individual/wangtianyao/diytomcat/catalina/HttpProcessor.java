@@ -9,6 +9,8 @@ import individual.wangtianyao.diytomcat.http.Request;
 import individual.wangtianyao.diytomcat.http.Response;
 import individual.wangtianyao.diytomcat.util.WebXMLUtil;
 import individual.wangtianyao.diytomcat.webservlet.HelloWorldServlet;
+import individual.wangtianyao.diytomcat.webservlet.InvokerServlet;
+import individual.wangtianyao.diytomcat.webservlet.StaticResourceServlet;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -32,53 +34,12 @@ public class HttpProcessor {
             String servletClassName = context.getServletClassName(uri);
             System.out.println("Context-docBase:"+ context.getDocBase() +
                     "\r\n reqs.uri: "+ uri+ "\r\n servletClassName: "+servletClassName);
-            if(servletClassName!=null){
 
-                Object servletObj = Class.forName(servletClassName).getConstructor().newInstance();
-                Method doGet = Class.forName(servletClassName).getMethod("doGet",
-                        HttpServletRequest.class,
-                        HttpServletResponse.class);
-                doGet.invoke(servletObj, reqs, resp);
+            if(servletClassName!=null) InvokerServlet.getInstance().service(reqs, resp);
+            else StaticResourceServlet.getInstance().service(reqs, resp);
 
-            }else {
-                switch (uri) {
-                    case "/":
-                        handleWelcomePage(s, resp, reqs);
-                        break;
-                    case "/hello":
-                        HelloWorldServlet helloServlet = new HelloWorldServlet();
-                        helloServlet.doGet(reqs, resp);
-                        break;
-                    case "/500":
-                        throw new RuntimeException(
-                                "This is a deliberately created 500 exception to test error exception.");
-                    default:
-                        // 显然，该分支之后应该被通用化为静态资源/文件访问
-
-                        // 在Diy Tomcat中，所有静态资源默认根目录为/webApps/ROOT;
-                        // 即Header.rootFolder File类实例
-                        String fileName = uri.substring(1, uri.length());
-                        File file = FileUtil.file(reqs.getContext().getDocBase(), fileName);
-
-                        if (file.exists()) {
-                            // 响应timeConsuming任务
-                            if (fileName.equals("wait1s.html")) {
-                                try {
-                                    Thread.sleep(1000);
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                }
-                            }
-                            String suffix = FileUtil.extName(file);
-                            String mimeType = WebXMLUtil.getMimeType(suffix);
-                            resp.setContentType(mimeType);
-                            byte[] fileContent = FileUtil.readBytes(file);
-                            resp.setBody(fileContent);
-                        } else handle404(s, uri);
-                        break;
-                }
-            }
-            handleResponse200(s, resp);
+            if(resp.getStatus()==Header.CODE_200) handleResponse200(s, resp);
+            if(resp.getStatus()==Header.CODE_404) handle404(s, uri);
         } catch (Exception e) {
             handle500(s, e);
         } finally{
@@ -87,19 +48,23 @@ public class HttpProcessor {
         }
     }
 
-    protected void handleWelcomePage(Socket s, Response resp, Request reqs) throws IOException{
-        String fileName = WebXMLUtil.getWelcomeFileName(reqs.getContext());
-        //System.out.println("uri: "+fileName+"\r\nAbsolute Context"+reqs.getContext().getDocBase());
-
-        File f = FileUtil.file(reqs.getContext().getDocBase(), fileName);
-        String html = FileUtil.readUtf8String(f);
-        resp.getWriter().println(html);
-    }
 
     protected void handleResponse200(Socket s, Response resp) throws IOException{
         OutputStream os = s.getOutputStream();
         byte[] respMessage = getResponseMessage200(resp);
         os.write(respMessage);
+        os.flush();
+    }
+
+    protected void handle404(Socket s, String uri) throws IOException{
+        Response resp = new Response();
+        OutputStream os = s.getOutputStream();
+        String responseBody = StrUtil.format(Header.page404, uri, uri);
+        String responseMessage = Header.ResponseHeader404
+                + Header.getHeaderEntryLine(Header.contentType, resp.getContentType())
+                + "\r\n" + responseBody;
+        byte[] bytes = responseMessage.getBytes(StandardCharsets.UTF_8);
+        os.write(bytes);
         os.flush();
     }
 
@@ -114,17 +79,6 @@ public class HttpProcessor {
         return respBytes;
     }
 
-    protected void handle404(Socket s, String uri) throws IOException{
-        OutputStream os = s.getOutputStream();
-        Response resp = new Response();
-        String responseBody = StrUtil.format(Header.page404, uri, uri);
-        String responseMessage = Header.ResponseHeader404
-                + Header.getHeaderEntryLine(Header.contentType, resp.getContentType())
-                + "\r\n" + responseBody;
-        byte[] bytes = responseMessage.getBytes(StandardCharsets.UTF_8);
-        os.write(bytes);
-        os.flush();
-    }
 
     protected void handle500(Socket s, Exception e){
         try {
