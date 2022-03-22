@@ -101,5 +101,11 @@ public class MiniBrowserTest {
         Assert.assertEquals(html, "Hello DIY Tomcat! \r\n  \t\t-----From HelloWorldServlet");
     }
 
+    @Test
+    public void testj2eeHelloServlet(){
+        String html = MiniBrowser.getContentString("http://localhost:810"+ "/j2ee/hello");
+        Assert.assertEquals(html, "Hello DIY Tomcat! \r\n  \t\t-----From HelloWorldServlet");
+    }
+
 
 }

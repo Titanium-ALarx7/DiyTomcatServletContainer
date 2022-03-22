@@ -2,6 +2,7 @@ package individual.wangtianyao.diytomcat.catalina;
 
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.ArrayUtil;
+import cn.hutool.core.util.ReflectUtil;
 import cn.hutool.core.util.StrUtil;
 import individual.wangtianyao.diytomcat.http.Header;
 import individual.wangtianyao.diytomcat.http.Request;
@@ -9,9 +10,12 @@ import individual.wangtianyao.diytomcat.http.Response;
 import individual.wangtianyao.diytomcat.util.WebXMLUtil;
 import individual.wangtianyao.diytomcat.webservlet.HelloWorldServlet;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.lang.reflect.Method;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 
@@ -24,43 +28,55 @@ public class HttpProcessor {
             System.out.println("URI got from the Client Request: " + uri + "\r\n");
             System.out.println("Input Information from Explorer: \r\n" + requestString + "\r\n");
 
+            Context context = reqs.getContext();
+            String servletClassName = context.getServletClassName(uri);
+            System.out.println("Context-docBase:"+ context.getDocBase() +
+                    "\r\n reqs.uri: "+ uri+ "\r\n servletClassName: "+servletClassName);
+            if(servletClassName!=null){
 
-            // 解析uri，生成对应状态码
-            switch (uri) {
-                case "/":
-                    handleWelcomePage(s, resp, reqs);
-                    break;
-                case "/hello":
-                    HelloWorldServlet helloServlet = new HelloWorldServlet();
-                    helloServlet.doGet(reqs, resp);
-                    break;
-                case "/500":
-                    throw new RuntimeException(
-                            "This is a deliberately created 500 exception to test error exception.");
-                default:
-                    // 显然，该分支之后应该被通用化为静态资源/文件访问
+                Object servletObj = Class.forName(servletClassName).getConstructor().newInstance();
+                Method doGet = Class.forName(servletClassName).getMethod("doGet",
+                        HttpServletRequest.class,
+                        HttpServletResponse.class);
+                doGet.invoke(servletObj, reqs, resp);
 
-                    // 在Diy Tomcat中，所有静态资源默认根目录为/webApps/ROOT;
-                    // 即Header.rootFolder File类实例
-                    String fileName = uri.substring(1, uri.length());
-                    File file = FileUtil.file(reqs.getContext().getDocBase(), fileName);
+            }else {
+                switch (uri) {
+                    case "/":
+                        handleWelcomePage(s, resp, reqs);
+                        break;
+                    case "/hello":
+                        HelloWorldServlet helloServlet = new HelloWorldServlet();
+                        helloServlet.doGet(reqs, resp);
+                        break;
+                    case "/500":
+                        throw new RuntimeException(
+                                "This is a deliberately created 500 exception to test error exception.");
+                    default:
+                        // 显然，该分支之后应该被通用化为静态资源/文件访问
 
-                    if (file.exists()) {
-                        // 响应timeConsuming任务
-                        if (fileName.equals("wait1s.html")) {
-                            try {
-                                Thread.sleep(1000);
-                            } catch (Exception e) {
-                                e.printStackTrace();
+                        // 在Diy Tomcat中，所有静态资源默认根目录为/webApps/ROOT;
+                        // 即Header.rootFolder File类实例
+                        String fileName = uri.substring(1, uri.length());
+                        File file = FileUtil.file(reqs.getContext().getDocBase(), fileName);
+
+                        if (file.exists()) {
+                            // 响应timeConsuming任务
+                            if (fileName.equals("wait1s.html")) {
+                                try {
+                                    Thread.sleep(1000);
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
                             }
-                        }
-                        String suffix = FileUtil.extName(file);
-                        String mimeType = WebXMLUtil.getMimeType(suffix);
-                        resp.setContentType(mimeType);
-                        byte[] fileContent = FileUtil.readBytes(file);
-                        resp.setBody(fileContent);
-                    } else handle404(s, uri);
-                    break;
+                            String suffix = FileUtil.extName(file);
+                            String mimeType = WebXMLUtil.getMimeType(suffix);
+                            resp.setContentType(mimeType);
+                            byte[] fileContent = FileUtil.readBytes(file);
+                            resp.setBody(fileContent);
+                        } else handle404(s, uri);
+                        break;
+                }
             }
             handleResponse200(s, resp);
         } catch (Exception e) {
@@ -78,10 +94,6 @@ public class HttpProcessor {
         File f = FileUtil.file(reqs.getContext().getDocBase(), fileName);
         String html = FileUtil.readUtf8String(f);
         resp.getWriter().println(html);
-        OutputStream os = s.getOutputStream();
-        byte[] respMessage = getResponseMessage200(resp);
-        os.write(respMessage);
-        os.flush();
     }
 
     protected void handleResponse200(Socket s, Response resp) throws IOException{
@@ -109,7 +121,6 @@ public class HttpProcessor {
         String responseMessage = Header.ResponseHeader404
                 + Header.getHeaderEntryLine(Header.contentType, resp.getContentType())
                 + "\r\n" + responseBody;
-        System.out.println(responseMessage);
         byte[] bytes = responseMessage.getBytes(StandardCharsets.UTF_8);
         os.write(bytes);
         os.flush();

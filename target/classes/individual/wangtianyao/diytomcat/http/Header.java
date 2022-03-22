@@ -17,6 +17,7 @@ public class Header {
     public final static File confFolder = new File(SystemUtil.get("user.dir"), "conf");
     public final static File serverXMLFile = new File(confFolder, "server.xml");
     public final static File webXMLFile = new File(confFolder, "web.xml");
+    public final static File contextXMLFile = new File(confFolder, "context.xml");
 
     public static String getHeaderEntryLine(String headerKey, String headerValue){
         return headerKey+":"+headerValue+"\r\n";
