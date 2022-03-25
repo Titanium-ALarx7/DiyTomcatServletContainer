@@ -32,7 +32,7 @@ public class InvokerServlet extends HttpServlet {
         String servletClassName = context.getServletClassName(uri);
         try {
             Class<?> clazz =  context.getWebAppClassLoader().loadClass(servletClassName); //Class.forName(servletClassName);
-            Object servletObj = clazz.getConstructor().newInstance();
+            Object servletObj = context.getServlet(clazz);
             System.out.println("servletClass: "+clazz);
             System.out.println("servletClass's Class Loader: "+clazz.getClassLoader());
             // 一定要注意，反射的getMethod无法得到私有方法；

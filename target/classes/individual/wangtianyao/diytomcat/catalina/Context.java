@@ -8,14 +8,19 @@ import individual.wangtianyao.diytomcat.ContextFileChangeWatcher;
 import individual.wangtianyao.diytomcat.classloader.WebAppClassLoader;
 import individual.wangtianyao.diytomcat.exception.WebConfigDuplicatedException;
 import individual.wangtianyao.diytomcat.http.ApplicationContext;
+import individual.wangtianyao.diytomcat.http.StandardServletConfig;
 import individual.wangtianyao.diytomcat.util.ContextXMLUtil;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
+import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
 import java.io.File;
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.logging.Logger;
 
@@ -33,8 +38,11 @@ public class Context {
     private final Map<String, String> urlToServletName;
     private final Map<String, String> servletNameToClassName;
     private final Map<String, String> classNameToServletName;
+    private Map<String, Map<String, String>> servlet_className_init_params;
 
     private ServletContext servletContext;
+    private Map<Class<?>, HttpServlet> servletPool;
+    private List<String> loadOnStartupServletClassNames;
 
     public Context(String path, String docBase, Host host, boolean reloadable) {
         this.path = path;
@@ -49,15 +57,30 @@ public class Context {
         this.classNameToServletName = new HashMap<>();
 
         this.servletContext = new ApplicationContext(this);
+        this.servletPool = new HashMap<>();
+        this.servlet_className_init_params=new HashMap<>();
+        this.loadOnStartupServletClassNames = new ArrayList<>();
 
         ClassLoader commonClassLoader = Thread.currentThread().getContextClassLoader();
         this.webAppClassLoader = new WebAppClassLoader(docBase, commonClassLoader);
         deploy();
     }
 
-    public void stop(){
-        webAppClassLoader.stop();
-        watcher.stop();
+    public synchronized HttpServlet getServlet(Class<?> clazz)
+            throws NoSuchMethodException, InstantiationException,
+            InvocationTargetException, IllegalAccessException, ServletException {
+        HttpServlet servlet = servletPool.get(clazz);
+        if(servlet==null){
+            servlet = (HttpServlet) clazz.getConstructor().newInstance();
+            ServletContext servletContext = this.getServletContext();
+            String className = clazz.getName();
+            String servletName = classNameToServletName.get(className);
+            Map<String, String> initParameters = servlet_className_init_params.get(className);
+            ServletConfig servletConfig = new StandardServletConfig(servletContext, servletName, initParameters);
+            servlet.init(servletConfig);
+            servletPool.put(clazz, servlet);
+        }
+        return servlet;
     }
 
     public void reload(){
@@ -86,6 +109,22 @@ public class Context {
         String xml = FileUtil.readUtf8String(contextWebXMLFile);
         Document d = Jsoup.parse(xml);
         parseServletMapping(d);
+        parseServletInitParams(d);
+        parseLoadOnStartup(d);
+        handleLoadOnStartup();
+    }
+
+    public void stop(){
+        webAppClassLoader.stop();
+        watcher.stop();
+        destroyServlets();
+    }
+
+    private void destroyServlets(){
+        Collection<HttpServlet> servlets = servletPool.values();
+        for(HttpServlet servlet: servlets){
+            servlet.destroy();
+        }
     }
 
     private void parseServletMapping(Document d){
@@ -132,6 +171,40 @@ public class Context {
         for(int i=0;i<contents.size()-1;i++)
             if(contents.get(i).equals(contents.get(i+1)))
                 throw new WebConfigDuplicatedException(StrUtil.format(desc, contents.get(i)));
+    }
+
+    private void parseServletInitParams(Document d) {
+        Elements es = d.select("servlet-class");
+        for (Element e : es) {
+            String servletClassName = e.text();
+            Elements initEs = e.parent().select("init-param");
+            if (initEs.isEmpty()) continue;
+            Map<String, String> initParams = new HashMap<>();
+            for (Element initE : initEs) {
+                String name = initE.selectFirst("param-name").text();
+                String value = initE.selectFirst("param-value").text();
+                initParams.put(name, value);
+            }
+            this.servlet_className_init_params.putIfAbsent(servletClassName, initParams);
+        }
+        System.out.println("class_name_init_params:"+servlet_className_init_params);
+    }
+
+    public void parseLoadOnStartup(Document d){
+        Elements es = d.select("load-on-startup");
+        for(Element e: es){
+            String loadName = e.parent().select("servlet-class").text();
+            loadOnStartupServletClassNames.add(loadName);
+        }
+    }
+
+    public void handleLoadOnStartup(){
+        for(String loadName: loadOnStartupServletClassNames){
+            try{
+                Class<?> clazz = webAppClassLoader.loadClass(loadName);
+                getServlet(clazz);
+            }catch(Exception e){e.printStackTrace();}
+        }
     }
 
     public String getPath() {
