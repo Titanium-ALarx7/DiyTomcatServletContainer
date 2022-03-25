@@ -31,8 +31,10 @@ public class InvokerServlet extends HttpServlet {
         Context context = request.getContext();
         String servletClassName = context.getServletClassName(uri);
         try {
-            Class<?> clazz = Class.forName(servletClassName);
+            Class<?> clazz =  context.getWebAppClassLoader().loadClass(servletClassName); //Class.forName(servletClassName);
             Object servletObj = clazz.getConstructor().newInstance();
+            System.out.println("servletClass: "+clazz);
+            System.out.println("servletClass's Class Loader: "+clazz.getClassLoader());
             // 一定要注意，反射的getMethod无法得到私有方法；
             // 而HttpServlet的public service，参数为ServletRequest，而非HttpServletRequest
             clazz.getMethod("service", ServletRequest.class, ServletResponse.class)

@@ -6,7 +6,11 @@
         <Connector port="812"/>
         <Engine defaultHost="localhost">
             <Host name="localhost">
-                <Context path="/b" docBase="C:\Users\wty_AL\Documents\GitHub\DiyTomcatServletContainer\b"/>
+                <Context path="/b"
+                         docBase="C:\Users\wty_AL\Documents\GitHub\DiyTomcatServletContainer\b"/>
+                <Context path="/pluginhelloweb"
+                         docBase="C:\Users\wty_AL\Documents\GitHub\pluginhelloweb\web"
+                         reloadable="true"/>
             </Host>
         </Engine>
     </Service>

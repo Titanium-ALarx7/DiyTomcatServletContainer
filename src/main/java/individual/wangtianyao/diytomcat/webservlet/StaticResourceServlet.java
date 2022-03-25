@@ -75,7 +75,7 @@ public class StaticResourceServlet extends HttpServlet {
     protected void handleWelcomePage(Response resp, Request reqs){
         String fileName = WebXMLUtil.getWelcomeFileName(reqs.getContext());
         //System.out.println("uri: "+fileName+"\r\nAbsolute Context"+reqs.getContext().getDocBase());
-        File f = FileUtil.file(reqs.getContext().getDocBase(), fileName);
+        File f = FileUtil.file(reqs.getRealPath(fileName));
         String html = FileUtil.readUtf8String(f);
         resp.getWriter().println(html);
     }

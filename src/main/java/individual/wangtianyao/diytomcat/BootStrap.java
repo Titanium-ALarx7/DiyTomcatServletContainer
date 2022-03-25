@@ -1,6 +1,5 @@
 package individual.wangtianyao.diytomcat;
 
-import individual.wangtianyao.diytomcat.catalina.Server;
 import individual.wangtianyao.diytomcat.classloader.CommonClassLoader;
 
 import java.lang.reflect.Method;
@@ -18,7 +17,6 @@ public class BootStrap {
         Method m = serverClazz.getMethod("start");
         m.invoke(serverObj);
 
-        System.out.println(serverClazz.getClassLoader());
     }
 
 }

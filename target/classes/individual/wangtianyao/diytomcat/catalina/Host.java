@@ -7,6 +7,7 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 
 @SuppressWarnings("FieldMayBeFinal")
@@ -24,6 +25,7 @@ public class Host {
         scanContextsInServerXML();
     }
 
+
     public String getName() {
         return name;
     }
@@ -40,6 +42,19 @@ public class Host {
         this.contextMap.put(key, context);
     }
 
+    public void reload(Context context){
+        Logger log = Logger.getLogger("context-reload");
+        log.info("Reloading context with name "+ context.getPath() +" has started.");
+        String path = context.getPath();
+        String docBase = context.getDocBase();
+        boolean reloadable = context.isReloadable();
+        context.stop();
+        contextMap.remove(path);
+        Context newContext = new Context(path, docBase, this, reloadable);
+        contextMap.put(newContext.getPath(), newContext);
+        log.info("Reloading context with name "+context.getPath() + "has completed.");
+
+    }
 
     /*
        加载WebApps文件夹下的所有文件夹到Context数据结构,
@@ -63,13 +78,13 @@ public class Host {
         else path="/"+path;
 
         String docBase = folder.getAbsolutePath();
-        Context context = new Context(path, docBase);
+        Context context = new Context(path, docBase, this, true);
 
         this.contextMap.put(context.getPath(), context);
     }
 
     private void scanContextsInServerXML(){
-        List<Context> contexts = ServerXMLUtil.getContexts();
+        List<Context> contexts = ServerXMLUtil.getContexts(this);
         for(Context c: contexts) contextMap.put(c.getPath(), c);
     }
 

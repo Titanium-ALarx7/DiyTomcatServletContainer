@@ -106,5 +106,13 @@ public class MiniBrowserTest {
         Assert.assertEquals(html, "Hello DIY Tomcat! \r\n  \t\t-----From HelloWorldServlet");
     }
 
+    @Test
+    public void testPluginHelloServlet(){
+        String html = MiniBrowser.getContentString("http://localhost:810"+ "/pluginHelloWeb/hello");
+        System.out.println(html);
+    }
+
+
+
 
 }

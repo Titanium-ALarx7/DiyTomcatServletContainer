@@ -1,5 +1,6 @@
 package individual.wangtianyao.diytomcat.util;
 
+import cn.hutool.core.convert.Convert;
 import cn.hutool.core.io.FileUtil;
 import individual.wangtianyao.diytomcat.catalina.*;
 import individual.wangtianyao.diytomcat.http.Header;
@@ -13,9 +14,8 @@ import java.util.List;
 
 public class ServerXMLUtil {
 
-    public static List<Context> getContexts(){
+    public static List<Context> getContexts(Host host){
         String xml = FileUtil.readUtf8String(Header.serverXMLFile);
-
         Document d = Jsoup.parse(xml);
         Elements es = d.select("Context");
         List<Context> result = new ArrayList<>();
@@ -23,7 +23,8 @@ public class ServerXMLUtil {
         for(Element e:es){
             String path = e.attr("path");
             String docBase = e.attr("docBase");
-            Context context = new Context(path, docBase);
+            boolean reloadable = Convert.toBool(e.attr("reloadable"), true);
+            Context context = new Context(path, docBase, host, reloadable);
             result.add(context);
         }
         return result;

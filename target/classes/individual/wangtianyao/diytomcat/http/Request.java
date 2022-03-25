@@ -5,6 +5,7 @@ import individual.wangtianyao.diytomcat.MiniBrowser;
 import individual.wangtianyao.diytomcat.catalina.Context;
 import individual.wangtianyao.diytomcat.catalina.Service;
 
+import javax.servlet.ServletContext;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.Socket;
@@ -77,7 +78,6 @@ public class Request extends BaseRequest {
         this.method = this.requestString.split("\r\n")[0].split(" ")[0];
     }
 
-    @Override
     public String getMethod() {
         return method;
     }
@@ -98,4 +98,11 @@ public class Request extends BaseRequest {
         this.context = context;
     }
 
+    public ServletContext getServletContext() {
+        return context.getServletContext();
+    }
+
+    public String getRealPath(String path){
+        return getServletContext().getRealPath(path);
+    }
 }
