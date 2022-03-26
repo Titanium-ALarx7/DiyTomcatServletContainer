@@ -1,6 +1,9 @@
 package individual.wangtianyao.diytomcat.http;
 
+import cn.hutool.core.io.IoUtil;
+import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.core.util.URLUtil;
 import individual.wangtianyao.diytomcat.MiniBrowser;
 import individual.wangtianyao.diytomcat.catalina.Context;
 import individual.wangtianyao.diytomcat.catalina.Service;
@@ -8,6 +11,8 @@ import individual.wangtianyao.diytomcat.catalina.Service;
 import javax.servlet.ServletContext;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringReader;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -23,15 +28,22 @@ public class Request extends BaseRequest {
     private final Socket socket;
     private final Service service;
     private String method;
+    private String queryString;
+    private final Map<String, String[]> parameterMap;
+    private Map<String, String> headerMap;
 
     public Request(Socket socket, Service service) throws IOException{
         this.socket = socket;
         this.service=service;
+        this.parameterMap = new HashMap<>();
+        this.headerMap = new HashMap<>();
         parseHttpRequest();
         if(StrUtil.isEmpty(requestString)) return;
         parseUri();
         parseMethod();
         parseContext();
+        parseParameters();
+        parseHeaders();
         // 将uri对静态资源/abc/k.html拆分为 uri=“/k.html”; context.path="/abc";
         if(!"/".equals(context.getPath())){
             this.uri=StrUtil.removePrefix(uri, this.context.getPath());
@@ -74,8 +86,48 @@ public class Request extends BaseRequest {
         if(this.context==null) this.context = service.getEngine().getDefaultHost().getContext("/");
     }
 
+    private void parseParameters(){
+        if("GET".equals(this.getMethod())){
+            String url = requestString.split(" ")[1];
+            if(StrUtil.contains(url, '?')) queryString = url.split("\\?")[1];
+        }
+
+        if("POST".equals(this.getMethod())) queryString= requestString.split("\r\n\r\n")[1];
+
+        if(queryString==null) return;
+        queryString = URLUtil.decode(queryString);
+        String[] parameterValues = queryString.split("&");
+        if(parameterValues!=null){
+            for(String parameterValue: parameterValues){
+                String[] nameValues = parameterValue.split("=");
+                String name = nameValues[0];
+                String value = nameValues[1];
+                String[] values = parameterMap.get(name);
+                if(values==null){
+                    values = new String[]{value};
+                    parameterMap.put(name, values);
+                }else{
+                    values = ArrayUtil.append(values, value);
+                    parameterMap.put(name, values);
+                }
+            }
+        }
+    }
+
     private void parseMethod(){
         this.method = this.requestString.split("\r\n")[0].split(" ")[0];
+    }
+
+    private void parseHeaders(){
+        StringReader stringReader = new StringReader(requestString);
+        List<String> lines = new ArrayList<>();
+        IoUtil.readLines(stringReader, lines);
+        for(int i=1;i< lines.size();i++){
+            String line = lines.get(i);
+            if(line.length()==0) break;
+            String[] segs = line.split(":");
+            headerMap.put(segs[0].toLowerCase(), segs[1]);
+        }
     }
 
     public String getMethod() {
@@ -104,5 +156,111 @@ public class Request extends BaseRequest {
 
     public String getRealPath(String path){
         return getServletContext().getRealPath(path);
+    }
+
+    public String getParameter(String name){
+        String[] values = parameterMap.get(name);
+        if(values!=null && values.length!=0) return values[0];
+        return null;
+    }
+
+    public Map<String, String[]> getParameterMap() {
+        return parameterMap;
+    }
+
+    public Enumeration<String> getParameterNames(){
+        return Collections.enumeration(parameterMap.keySet());
+    }
+
+    public String[] getParameterValues(String name){
+        return parameterMap.get(name);
+    }
+
+    public String getHeader(String name){
+        if(name==null) return null;
+        name = name.toLowerCase();
+        return headerMap.get(name);
+    }
+
+    public Enumeration getHeaderNames(){
+        Set<?> keys = headerMap.keySet();
+        return Collections.enumeration(keys);
+    }
+
+    public int getIntHeaders(String name){
+        String val = headerMap.get(name);
+        return Integer.parseInt(val);
+    }
+
+    public String getLocalAddr(){
+        return socket.getLocalAddress().getHostAddress();
+    }
+
+    public String getLocalName(){
+        return socket.getLocalAddress().getHostName();
+    }
+
+    public int getLocalPort(){
+        return socket.getLocalPort();
+    }
+
+    public String getProtocol(){
+        return requestString.split(" ")[2];
+    }
+
+    public String getRemoteAddr(){
+        InetSocketAddress isa = (InetSocketAddress) socket.getRemoteSocketAddress();
+        String temp = isa.getAddress().toString();
+        return temp.split("/")[1];
+    }
+
+    public String getRemoteHost(){
+        InetSocketAddress isa = (InetSocketAddress) socket.getRemoteSocketAddress();
+        return isa.getHostName();
+    }
+
+    public int getRemotePort(){
+        return socket.getPort();
+    }
+
+    public String getScheme(){
+        return "http";
+    }
+
+    public String getServerName(){
+        return getHeader("host").trim();
+    }
+
+    public int getServerPort(){
+        return getLocalPort();
+    }
+
+    public String getContextPath(){
+        String result = this.context.getPath();
+        if(result.equals("/")) return "";
+        return result;
+    }
+
+    public String getRequestURI(){
+        return uri;
+    }
+    public StringBuffer getRequestURL(){
+        StringBuffer url = new StringBuffer();
+        String scheme = getScheme();
+        int port = getServerPort();
+        if(port<0) port=80;
+        url.append(scheme);
+        url.append("://");
+        url.append(getServerName());
+        if((scheme.equals("http")&&(port!=80))||(scheme.equals("https")&&(port!=443))){
+            url.append(":");
+            url.append(port);
+        }
+        url.append(getRequestURI());
+        return url;
+    }
+
+    public String getServletPath(){
+        return uri;
     }
 }

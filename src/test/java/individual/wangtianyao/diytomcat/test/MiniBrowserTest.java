@@ -10,6 +10,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import individual.wangtianyao.diytomcat.MiniBrowser;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -112,5 +114,29 @@ public class MiniBrowserTest {
         System.out.println(html);
     }
 
+    @Test
+    public void testgetParam() {
+        String uri = "/pluginhelloweb/param";
+        String url = StrUtil.format("http://{}:{}{}", ip,port,uri);
+        Map<String,Object> params = new HashMap<>();
+        params.put("name","meepo");
+        String html = MiniBrowser.getContentString(url, params, true);
+        Assert.assertEquals(html,"Param Servlet handle GET, with parameter name: meepo");
+    }
 
+    @Test
+    public void testpostParam() {
+        String uri = "/pluginhelloweb/param";
+        String url = StrUtil.format("http://{}:{}{}", ip,port,uri);
+        Map<String,Object> params = new HashMap<>();
+        params.put("name","meepo");
+        String html = MiniBrowser.getContentString(url, params, false);
+        Assert.assertEquals(html,"Param Servlet handle POST, with parameter name: meepo");
+    }
+
+    @Test
+    public void testheaders(){
+        String html = MiniBrowser.getContentString("http://localhost:810"+"/pluginhelloweb/header");
+        Assert.assertEquals(html, "DIY MiniBrowser / java1.8");
+    }
 }
