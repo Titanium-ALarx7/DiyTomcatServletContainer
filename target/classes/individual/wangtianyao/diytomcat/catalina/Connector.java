@@ -13,6 +13,11 @@ public class Connector implements Runnable{
 
     int port;
     private final Service service;
+    private String compression;
+    private int compressionMinSize;
+    private String noCompressionUserAgents;
+    private String compressableMimeType;
+
 
     public void setPort(int port) {
         this.port = port;
@@ -62,7 +67,7 @@ public class Connector implements Runnable{
                 // 匿名类的形式构建new Runnable
                 Runnable task = () -> {
                     Request reqs=null;
-                    try{reqs = new Request(s, service);}
+                    try{reqs = new Request(s, Connector.this);}
                     catch(IOException e){e.printStackTrace();};
                     assert reqs != null;
 
@@ -80,4 +85,35 @@ public class Connector implements Runnable{
         }
     }
 
+    public String getCompression() {
+        return compression;
+    }
+
+    public void setCompression(String compression) {
+        this.compression = compression;
+    }
+
+    public int getCompressionMinSize() {
+        return compressionMinSize;
+    }
+
+    public void setCompressionMinSize(int compressionMinSize) {
+        this.compressionMinSize = compressionMinSize;
+    }
+
+    public String getNoCompressionUserAgents() {
+        return noCompressionUserAgents;
+    }
+
+    public void setNoCompressionUserAgents(String noCompressionUserAgents) {
+        this.noCompressionUserAgents = noCompressionUserAgents;
+    }
+
+    public String getCompressableMimeType() {
+        return compressableMimeType;
+    }
+
+    public void setCompressableMimeType(String compressableMimeType) {
+        this.compressableMimeType = compressableMimeType;
+    }
 }

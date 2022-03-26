@@ -22,6 +22,7 @@ public class Header {
     public final static File serverXMLFile = new File(confFolder, "server.xml");
     public final static File webXMLFile = new File(confFolder, "web.xml");
     public final static File contextXMLFile = new File(confFolder, "context.xml");
+    public final static String workFolderPath = SystemUtil.get("user.dir")+File.separator+"work";
 
     public static String getHeaderEntryLine(String headerKey, String headerValue){
         return headerKey+":"+headerValue+"\r\n";

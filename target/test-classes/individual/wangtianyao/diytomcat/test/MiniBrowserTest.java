@@ -5,6 +5,7 @@ import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.util.NetUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.core.util.ZipUtil;
 import individual.wangtianyao.diytomcat.http.Header;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -15,6 +16,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -179,5 +181,21 @@ public class MiniBrowserTest {
             conn.disconnect();
             Thread.sleep(500);
         }
+    }
+
+    @Test
+    public void testGzip(){
+        byte[] gzipContent = MiniBrowser.getContentBytes("http://localhost:810/", true);
+        byte[] unGzip = ZipUtil.unGzip(gzipContent);
+        String html = new String(unGzip);
+        System.out.println(unGzip.length+"   "+gzipContent.length);
+        System.out.println(html);
+    }
+
+    @Test
+    public void testJsp(){
+        String html = MiniBrowser.getContentString("http://localhost:810/pluginhelloweb/");
+        System.out.println(html);
+        Assert.assertEquals(html, "hello jsp@pluginhelloweb");
     }
 }

@@ -5,6 +5,7 @@ import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.core.util.URLUtil;
 import individual.wangtianyao.diytomcat.MiniBrowser;
+import individual.wangtianyao.diytomcat.catalina.Connector;
 import individual.wangtianyao.diytomcat.catalina.Context;
 import individual.wangtianyao.diytomcat.catalina.Service;
 
@@ -28,7 +29,7 @@ public class Request extends BaseRequest {
     private String uri;
     private Context context;
     private final Socket socket;
-    private final Service service;
+    private final Connector connector;
     private String method;
     private String queryString;
     private Cookie[] cookies;
@@ -36,9 +37,9 @@ public class Request extends BaseRequest {
     private final Map<String, String[]> parameterMap;
     private Map<String, String> headerMap;
 
-    public Request(Socket socket, Service service) throws IOException{
+    public Request(Socket socket, Connector connector) throws IOException{
         this.socket = socket;
-        this.service=service;
+        this.connector=connector;
         this.parameterMap = new HashMap<>();
         this.headerMap = new HashMap<>();
         parseHttpRequest();
@@ -79,6 +80,7 @@ public class Request extends BaseRequest {
     private void parseContext(){
         // Context为一个@RequestMapping与dir的绝对路径的映射
         // 先查看该uri是否直接映射一个context(即uri代表了一个文件夹)，有则返回；此时uri将更新为”/“，之后会被welcomePage()处理。
+        Service service = connector.getService();
         this.context = Objects.requireNonNull(service.getEngine().getDefaultHost()).getContext(this.uri);
         if(context!=null) return;
 
@@ -232,6 +234,10 @@ public class Request extends BaseRequest {
     public int getIntHeaders(String name){
         String val = headerMap.get(name);
         return Integer.parseInt(val);
+    }
+
+    public Connector getConnector() {
+        return connector;
     }
 
     public String getLocalAddr(){

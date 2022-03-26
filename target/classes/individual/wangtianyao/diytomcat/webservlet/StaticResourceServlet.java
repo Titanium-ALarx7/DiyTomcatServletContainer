@@ -30,6 +30,10 @@ public class StaticResourceServlet extends HttpServlet {
         Response resp = (Response) httpResp;
         Context context = reqs.getContext();
         String uri = reqs.getUri();
+        if(uri.endsWith(".jsp")){
+            JspServlet.getInstance().service(reqs, resp);
+            return;
+        }
         resp.setStatus(Header.CODE_200);
 
         switch (uri) {

@@ -1,27 +1,21 @@
 package individual.wangtianyao.diytomcat.catalina;
 
-import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.ArrayUtil;
-import cn.hutool.core.util.ReflectUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.core.util.ZipUtil;
 import individual.wangtianyao.diytomcat.http.Header;
 import individual.wangtianyao.diytomcat.http.Request;
 import individual.wangtianyao.diytomcat.http.Response;
 import individual.wangtianyao.diytomcat.util.SessionManager;
-import individual.wangtianyao.diytomcat.util.WebXMLUtil;
-import individual.wangtianyao.diytomcat.webservlet.HelloWorldServlet;
 import individual.wangtianyao.diytomcat.webservlet.InvokerServlet;
 import individual.wangtianyao.diytomcat.webservlet.StaticResourceServlet;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.lang.reflect.Method;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+
 
 public class HttpProcessor {
     public void execute(Socket s, Request reqs, Response resp){
@@ -42,7 +36,7 @@ public class HttpProcessor {
             if(servletClassName!=null) InvokerServlet.getInstance().service(reqs, resp);
             else StaticResourceServlet.getInstance().service(reqs, resp);
 
-            if(resp.getStatus()==Header.CODE_200) handleResponse200(s, resp);
+            if(resp.getStatus()==Header.CODE_200) handleResponse200(s, reqs, resp);
             if(resp.getStatus()==Header.CODE_404) handle404(s, uri);
         } catch (Exception e) {
             handle500(s, e);
@@ -58,10 +52,33 @@ public class HttpProcessor {
         reqs.setSession(session);
     }
 
+    private boolean isGzip(Request reqs, byte[] body, String mimeType){
+        String acceptEncodings = reqs.getHeader("Accept-Encoding");
+        if(!StrUtil.containsAny(acceptEncodings, "gzip")) return false;
+        Connector connector = reqs.getConnector();
+        if(mimeType.contains(";")) mimeType=StrUtil.subBefore(mimeType, ";",false);
+        if(!connector.getCompression().equals("on")) return false;
+        if(body.length < connector.getCompressionMinSize()) return false;
+        String userAgents = connector.getNoCompressionUserAgents();
+        String[] eachUserAgents = userAgents.split(",");
+        for(String eachUserAgent: eachUserAgents){
+            eachUserAgent = eachUserAgent.trim();
+            String userAgent = reqs.getHeader("User-Agent");
+            if(StrUtil.containsAny(userAgent, eachUserAgent)) return false;
+        }
+        String mimeTypes = connector.getCompressableMimeType();
+        String[] eachMimeTypes = mimeTypes.split(",");
+        for(String eachMimeType: eachMimeTypes){
+            if(mimeType.equals(eachMimeType)) return true;
+        }
+        return false;
+    }
 
-    protected void handleResponse200(Socket s, Response resp) throws IOException{
+
+    protected void handleResponse200(Socket s, Request reqs ,Response resp) throws IOException{
         OutputStream os = s.getOutputStream();
-        byte[] respMessage = getResponseMessage200(resp);
+        boolean gzip = isGzip(reqs, resp.getBody(), resp.getContentType());
+        byte[] respMessage = getResponseMessage200(resp, gzip);
         os.write(respMessage);
         os.flush();
     }
@@ -78,12 +95,15 @@ public class HttpProcessor {
         os.flush();
     }
 
-    private byte[] getResponseMessage200(Response resp){
-        byte[] respHeader = (Header.ResponseHeader200
+    private byte[] getResponseMessage200(Response resp, boolean gzip){
+        String responseHeader = Header.ResponseHeader200
                 + Header.getHeaderEntryLine(Header.contentType, resp.getContentType())
-                + resp.getCookiesHeader()
-                + "\r\n").getBytes(StandardCharsets.UTF_8);
+                + resp.getCookiesHeader();
+        if(gzip) responseHeader += "Content-Encoding:gzip\r\n";
+        responseHeader += "\r\n";
+        byte[] respHeader = responseHeader.getBytes(StandardCharsets.UTF_8);
         byte[] respBody = resp.getBody();
+        if(gzip) respBody = ZipUtil.gzip(respBody);
         byte[] respBytes = new byte[respHeader.length+respBody.length];
         ArrayUtil.copy(respHeader, 0, respBytes, 0, respHeader.length);
         ArrayUtil.copy(respBody, 0, respBytes, respHeader.length, respBody.length);
@@ -95,7 +115,7 @@ public class HttpProcessor {
         try {
             StackTraceElement[] stes = e.getStackTrace();
             StringBuilder sb = new StringBuilder();
-            sb.append(e.toString());
+            sb.append(e);
             for (StackTraceElement ste : stes) {
                 sb.append("\t");
                 sb.append(ste.toString());
