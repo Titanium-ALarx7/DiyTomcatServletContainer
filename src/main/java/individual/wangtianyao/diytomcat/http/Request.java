@@ -9,6 +9,8 @@ import individual.wangtianyao.diytomcat.catalina.Context;
 import individual.wangtianyao.diytomcat.catalina.Service;
 
 import javax.servlet.ServletContext;
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
@@ -29,6 +31,8 @@ public class Request extends BaseRequest {
     private final Service service;
     private String method;
     private String queryString;
+    private Cookie[] cookies;
+    private HttpSession session;
     private final Map<String, String[]> parameterMap;
     private Map<String, String> headerMap;
 
@@ -44,6 +48,7 @@ public class Request extends BaseRequest {
         parseContext();
         parseParameters();
         parseHeaders();
+        parseCookies();
         // 将uri对静态资源/abc/k.html拆分为 uri=“/k.html”; context.path="/abc";
         if(!"/".equals(context.getPath())){
             this.uri=StrUtil.removePrefix(uri, this.context.getPath());
@@ -128,6 +133,43 @@ public class Request extends BaseRequest {
             String[] segs = line.split(":");
             headerMap.put(segs[0].toLowerCase(), segs[1]);
         }
+    }
+
+    private void parseCookies(){
+        List<Cookie> cookieList = new ArrayList<>();
+        String cookies = headerMap.get("cookie");
+        if(cookies!=null){
+            String[] pairs = StrUtil.split(cookies,";");
+            for(String pair: pairs){
+                if(StrUtil.isBlank(pair)) continue;
+                String[] segs = StrUtil.split(pair, "=");
+                String name = segs[0].trim();
+                String value = segs[1].trim();
+                Cookie cookie = new Cookie(name, value);
+                cookieList.add(cookie);
+            }
+        }
+        this.cookies = ArrayUtil.toArray(cookieList, Cookie.class);
+    }
+
+    public Cookie[] getCookies(){
+        return cookies;
+    }
+
+    public HttpSession getSession(){
+        return session;
+    }
+
+    public void setSession(HttpSession session){
+        this.session=session;
+    }
+
+    public String getJSessionIdFromCookie(){
+        if(cookies==null) return null;
+        for(Cookie cookie: cookies){
+            if(cookie.getName().equals("JSESSIONID")) return cookie.getValue();
+        }
+        return null;
     }
 
     public String getMethod() {

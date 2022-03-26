@@ -2,6 +2,7 @@ package individual.wangtianyao.diytomcat.test;
 
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.TimeInterval;
+import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.util.NetUtil;
 import cn.hutool.core.util.StrUtil;
 import individual.wangtianyao.diytomcat.http.Header;
@@ -10,6 +11,10 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import individual.wangtianyao.diytomcat.MiniBrowser;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -138,5 +143,41 @@ public class MiniBrowserTest {
     public void testheaders(){
         String html = MiniBrowser.getContentString("http://localhost:810"+"/pluginhelloweb/header");
         Assert.assertEquals(html, "DIY MiniBrowser / java1.8");
+    }
+
+    @Test
+    public void testSetCookie(){
+        String html = MiniBrowser.getHttpString("http://localhost:810"+"/pluginhelloweb/setCookie");
+        System.out.println(html);
+        Assert.assertTrue(html.contains("Set-Cookie:name=PluginSet(Cookie);Expires="));
+    }
+
+    @Test
+    public void testGetCookie() throws Exception{
+        URL url = new URL("http://localhost:810"+"/pluginhelloweb/getCookie");
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setRequestProperty("Cookie", "name=PluginTest(cookie);father=MiniBrowserTest;uuu=HHHH");
+        conn.connect();
+        InputStream is = conn.getInputStream();
+        String html = IoUtil.read(is, "utf-8");
+        System.out.println(html);
+    }
+
+    @Test
+    public void testSession() throws Exception{
+        String jsessionid = MiniBrowser.getContentString("http://localhost:810"+"/pluginhelloweb/setSession");
+        if(jsessionid!=null) System.out.println(jsessionid=jsessionid.trim());
+        String url = "http://localhost:810"+"/pluginhelloweb/getSession";
+        for(int i=0;i<10;i++) {
+            URL u = new URL(url);
+            HttpURLConnection conn = (HttpURLConnection) u.openConnection();
+            conn.setRequestProperty("Cookie", "JSESSIONID=" + jsessionid);
+            conn.connect();
+            InputStream is = conn.getInputStream();
+            String html = IoUtil.read(is, "utf-8");
+            System.out.println(html);
+            conn.disconnect();
+            Thread.sleep(500);
+        }
     }
 }

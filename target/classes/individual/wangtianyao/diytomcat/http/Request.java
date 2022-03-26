@@ -9,9 +9,12 @@ import individual.wangtianyao.diytomcat.catalina.Context;
 import individual.wangtianyao.diytomcat.catalina.Service;
 
 import javax.servlet.ServletContext;
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -28,6 +31,8 @@ public class Request extends BaseRequest {
     private final Service service;
     private String method;
     private String queryString;
+    private Cookie[] cookies;
+    private HttpSession session;
     private final Map<String, String[]> parameterMap;
     private Map<String, String> headerMap;
 
@@ -43,6 +48,7 @@ public class Request extends BaseRequest {
         parseContext();
         parseParameters();
         parseHeaders();
+        parseCookies();
         // 将uri对静态资源/abc/k.html拆分为 uri=“/k.html”; context.path="/abc";
         if(!"/".equals(context.getPath())){
             this.uri=StrUtil.removePrefix(uri, this.context.getPath());
@@ -129,6 +135,43 @@ public class Request extends BaseRequest {
         }
     }
 
+    private void parseCookies(){
+        List<Cookie> cookieList = new ArrayList<>();
+        String cookies = headerMap.get("cookie");
+        if(cookies!=null){
+            String[] pairs = StrUtil.split(cookies,";");
+            for(String pair: pairs){
+                if(StrUtil.isBlank(pair)) continue;
+                String[] segs = StrUtil.split(pair, "=");
+                String name = segs[0].trim();
+                String value = segs[1].trim();
+                Cookie cookie = new Cookie(name, value);
+                cookieList.add(cookie);
+            }
+        }
+        this.cookies = ArrayUtil.toArray(cookieList, Cookie.class);
+    }
+
+    public Cookie[] getCookies(){
+        return cookies;
+    }
+
+    public HttpSession getSession(){
+        return session;
+    }
+
+    public void setSession(HttpSession session){
+        this.session=session;
+    }
+
+    public String getJSessionIdFromCookie(){
+        if(cookies==null) return null;
+        for(Cookie cookie: cookies){
+            if(cookie.getName().equals("JSESSIONID")) return cookie.getValue();
+        }
+        return null;
+    }
+
     public String getMethod() {
         return method;
     }
@@ -189,5 +232,77 @@ public class Request extends BaseRequest {
     public int getIntHeaders(String name){
         String val = headerMap.get(name);
         return Integer.parseInt(val);
+    }
+
+    public String getLocalAddr(){
+        return socket.getLocalAddress().getHostAddress();
+    }
+
+    public String getLocalName(){
+        return socket.getLocalAddress().getHostName();
+    }
+
+    public int getLocalPort(){
+        return socket.getLocalPort();
+    }
+
+    public String getProtocol(){
+        return requestString.split(" ")[2];
+    }
+
+    public String getRemoteAddr(){
+        InetSocketAddress isa = (InetSocketAddress) socket.getRemoteSocketAddress();
+        String temp = isa.getAddress().toString();
+        return temp.split("/")[1];
+    }
+
+    public String getRemoteHost(){
+        InetSocketAddress isa = (InetSocketAddress) socket.getRemoteSocketAddress();
+        return isa.getHostName();
+    }
+
+    public int getRemotePort(){
+        return socket.getPort();
+    }
+
+    public String getScheme(){
+        return "http";
+    }
+
+    public String getServerName(){
+        return getHeader("host").trim();
+    }
+
+    public int getServerPort(){
+        return getLocalPort();
+    }
+
+    public String getContextPath(){
+        String result = this.context.getPath();
+        if(result.equals("/")) return "";
+        return result;
+    }
+
+    public String getRequestURI(){
+        return uri;
+    }
+    public StringBuffer getRequestURL(){
+        StringBuffer url = new StringBuffer();
+        String scheme = getScheme();
+        int port = getServerPort();
+        if(port<0) port=80;
+        url.append(scheme);
+        url.append("://");
+        url.append(getServerName());
+        if((scheme.equals("http")&&(port!=80))||(scheme.equals("https")&&(port!=443))){
+            url.append(":");
+            url.append(port);
+        }
+        url.append(getRequestURI());
+        return url;
+    }
+
+    public String getServletPath(){
+        return uri;
     }
 }

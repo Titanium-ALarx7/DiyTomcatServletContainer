@@ -7,6 +7,7 @@ import cn.hutool.core.util.StrUtil;
 import individual.wangtianyao.diytomcat.http.Header;
 import individual.wangtianyao.diytomcat.http.Request;
 import individual.wangtianyao.diytomcat.http.Response;
+import individual.wangtianyao.diytomcat.util.SessionManager;
 import individual.wangtianyao.diytomcat.util.WebXMLUtil;
 import individual.wangtianyao.diytomcat.webservlet.HelloWorldServlet;
 import individual.wangtianyao.diytomcat.webservlet.InvokerServlet;
@@ -14,6 +15,7 @@ import individual.wangtianyao.diytomcat.webservlet.StaticResourceServlet;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -26,6 +28,8 @@ public class HttpProcessor {
         try {
             String requestString = reqs.getRequestString();
             String uri = reqs.getUri();
+
+            prepareSession(reqs, resp);
             // reqs类的解析方式，uri为fileName或"/"; dir存储于context中
             System.out.println("URI got from the Client Request: " + uri + "\r\n");
             System.out.println("Input Information from Explorer: \r\n" + requestString + "\r\n");
@@ -46,6 +50,12 @@ public class HttpProcessor {
             try{if(!s.isClosed()) s.close();}
             catch(IOException e){e.printStackTrace();}
         }
+    }
+
+    public void prepareSession(Request reqs, Response resp){
+        String jsessionid = reqs.getJSessionIdFromCookie();
+        HttpSession session = SessionManager.getSession(jsessionid, reqs, resp);
+        reqs.setSession(session);
     }
 
 
@@ -71,6 +81,7 @@ public class HttpProcessor {
     private byte[] getResponseMessage200(Response resp){
         byte[] respHeader = (Header.ResponseHeader200
                 + Header.getHeaderEntryLine(Header.contentType, resp.getContentType())
+                + resp.getCookiesHeader()
                 + "\r\n").getBytes(StandardCharsets.UTF_8);
         byte[] respBody = resp.getBody();
         byte[] respBytes = new byte[respHeader.length+respBody.length];
