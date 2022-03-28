@@ -37,18 +37,19 @@ public class Context {
     private final Map<String, String> urlToServletName;
     private final Map<String, String> servletNameToClassName;
     private final Map<String, String> classNameToServletName;
-    private Map<String, Map<String, String>> servlet_className_init_params;
+    private final Map<String, Map<String, String>> servlet_className_init_params;
 
-    private Map<String, List<String>> url_filterClassName;
-    private Map<String, List<String>> url_FilterNames;
-    private Map<String, String> filterName_className;
-    private Map<String, String> className_filterName;
-    private Map<String, Map<String, String>> filter_className_init_params;
+    private final Map<String, List<String>> url_filterClassName;
+    private final Map<String, List<String>> url_FilterNames;
+    private final Map<String, String> filterName_className;
+    private final Map<String, String> className_filterName;
+    private final Map<String, Map<String, String>> filter_className_init_params;
 
-    private ServletContext servletContext;
-    private Map<Class<?>, HttpServlet> servletPool;
-    private Map<String, Filter> filterPool;
-    private List<String> loadOnStartupServletClassNames;
+    private final ServletContext servletContext;
+    private final Map<Class<?>, HttpServlet> servletPool;
+    private final Map<String, Filter> filterPool;
+    private final List<String> loadOnStartupServletClassNames;
+    private final List<ServletContextListener> listeners;
 
     public Context(String path, String docBase, Host host, boolean reloadable) {
         this.path = path;
@@ -73,6 +74,7 @@ public class Context {
         this.filterName_className = new HashMap<>();
         this.className_filterName = new HashMap<>();
         this.filter_className_init_params = new HashMap<>();
+        this.listeners = new ArrayList<>();
 
         ClassLoader commonClassLoader = Thread.currentThread().getContextClassLoader();
         this.webAppClassLoader = new WebAppClassLoader(docBase, commonClassLoader);
@@ -105,6 +107,7 @@ public class Context {
         Logger log = Logger.getLogger("context-info");
         log.info("Deploying web application directory "+ this.docBase);
         init();
+        loadListeners();
         if(reloadable){
             watcher=new ContextFileChangeWatcher(this);
             watcher.start();
@@ -128,11 +131,13 @@ public class Context {
         parseFilterInitParams(d);
         handleLoadOnStartup();
         initFilters();
+        fireEvent("init");
     }
 
     public void stop(){
         webAppClassLoader.stop();
         watcher.stop();
+        fireEvent("destroy");
         destroyServlets();
     }
 
@@ -333,6 +338,30 @@ public class Context {
         return false;
     }
 
+    private void loadListeners(){
+        try{
+            if(!contextWebXMLFile.exists()) return;
+            String xml = FileUtil.readUtf8String(contextWebXMLFile);
+            Document d = Jsoup.parse(xml);
+
+            Elements es = d.select("listener listener-class");
+            for(Element e:es){
+                String listenerClassName = e.text();
+                Class<?> clazz = this.getWebAppClassLoader().loadClass(listenerClassName);
+                ServletContextListener l = (ServletContextListener) clazz.getConstructor().newInstance();
+                addListener(l);
+            }
+        }catch (Exception e){e.printStackTrace();}
+    }
+
+    private void fireEvent(String type){
+        ServletContextEvent event = new ServletContextEvent(servletContext);
+        for(ServletContextListener scl:listeners){
+            if(type.equals("init"))scl.contextInitialized(event);
+            if(type.equals("destroy")) scl.contextDestroyed(event);
+        }
+    }
+
     public String getPath() {
         return path;
     }
@@ -368,4 +397,9 @@ public class Context {
     public ServletContext getServletContext() {
         return servletContext;
     }
+
+    public void addListener(ServletContextListener l){
+        this.listeners.add(l);
+    }
+
 }

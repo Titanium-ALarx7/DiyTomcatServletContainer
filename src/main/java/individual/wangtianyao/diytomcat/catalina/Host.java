@@ -5,6 +5,7 @@ import cn.hutool.core.util.RuntimeUtil;
 import cn.hutool.core.util.StrUtil;
 import individual.wangtianyao.diytomcat.http.Header;
 import individual.wangtianyao.diytomcat.util.ServerXMLUtil;
+import individual.wangtianyao.diytomcat.watcher.WarFileWatcher;
 
 import java.io.File;
 import java.util.HashMap;
@@ -27,6 +28,8 @@ public class Host {
         scanContextsOnWebAppsFolder();
         scanContextsInServerXML();
         scanWarOnWebAppsFolder();
+
+        new WarFileWatcher(this).start();
     }
 
     public void load(File folder){
