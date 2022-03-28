@@ -25,6 +25,7 @@ public class Response extends BaseResponse {
     private String contentType;
     private byte[] body;
     private int status;
+    private String redirectPath;
     private List<Cookie> cookies;
 
     @Override
@@ -48,6 +49,14 @@ public class Response extends BaseResponse {
     @Override
     public void setStatus(int status) {
         this.status = status;
+    }
+
+    public String getRedirectPath() {
+        return redirectPath;
+    }
+
+    public void sendRedirect(String redirectPath) {
+        this.redirectPath = redirectPath;
     }
 
     public Response(){

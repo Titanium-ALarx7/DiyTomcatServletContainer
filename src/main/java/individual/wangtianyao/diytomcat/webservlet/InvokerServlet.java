@@ -39,7 +39,8 @@ public class InvokerServlet extends HttpServlet {
             // 而HttpServlet的public service，参数为ServletRequest，而非HttpServletRequest
             clazz.getMethod("service", ServletRequest.class, ServletResponse.class)
                     .invoke(servletObj, request, response);
-            response.setStatus(Header.CODE_200);
+            if(response.getRedirectPath()==null) response.setStatus(Header.CODE_200);
+            else response.setStatus(Header.CODE_302);
         }catch (Exception e){e.printStackTrace();}
     }
 }

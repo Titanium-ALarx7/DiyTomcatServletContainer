@@ -7,7 +7,8 @@ import java.io.File;
 public class Header {
     public static final String ResponseHeader200="HTTP/1.1 200 OK\r\n";
     public static final String contentType="Content-Type";
-    public static final String ResponseHeader404="HTTP/1.1 404 Not Found\r\n";
+    public static final String ResponseHeader404 = "HTTP/1.1 404 Not Found\r\n";
+    public static final String ResponseHeader302 = "HTTP/1.1 302 Found\r\n";
     public static final String ResponseHeader500 = "HTTP/1.1 500 Internal Server Error\r\n";
 
     public static final int CODE_200 = 200;

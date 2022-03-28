@@ -198,4 +198,11 @@ public class MiniBrowserTest {
         System.out.println(html);
         Assert.assertEquals(html, "hello jsp@pluginhelloweb");
     }
+
+    @Test
+    public void testServerJump(){
+        String httpContent = MiniBrowser.getHttpString("http://localhost:810/pluginhelloweb/serverJump");
+        System.out.println(httpContent);
+        Assert.assertTrue(httpContent.contains("Hello DIY Tomcat from HelloServlet@pluginHello"));
+    }
 }

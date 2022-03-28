@@ -31,6 +31,7 @@ public class StaticResourceServlet extends HttpServlet {
         Context context = reqs.getContext();
         String uri = reqs.getUri();
         if(uri.endsWith(".jsp")){
+            System.out.println("StaticResource Servlet calls on JspServlet.");
             JspServlet.getInstance().service(reqs, resp);
             return;
         }

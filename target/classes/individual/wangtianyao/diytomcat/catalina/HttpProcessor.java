@@ -8,13 +8,17 @@ import individual.wangtianyao.diytomcat.http.Request;
 import individual.wangtianyao.diytomcat.http.Response;
 import individual.wangtianyao.diytomcat.util.SessionManager;
 import individual.wangtianyao.diytomcat.webservlet.InvokerServlet;
+import individual.wangtianyao.diytomcat.webservlet.JspServlet;
 import individual.wangtianyao.diytomcat.webservlet.StaticResourceServlet;
 
+import javax.servlet.Filter;
+import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 
 public class HttpProcessor {
@@ -33,11 +37,18 @@ public class HttpProcessor {
             System.out.println("Context-docBase:"+ context.getDocBase() +
                     "\r\n reqs.uri: "+ uri+ "\r\n servletClassName: "+servletClassName);
 
-            if(servletClassName!=null) InvokerServlet.getInstance().service(reqs, resp);
-            else StaticResourceServlet.getInstance().service(reqs, resp);
+            HttpServlet workingServlet;
+            if(servletClassName!=null) workingServlet=InvokerServlet.getInstance();
+            else if(uri.endsWith(".jsp")) workingServlet= JspServlet.getInstance();
+            else workingServlet=StaticResourceServlet.getInstance();
+            List<Filter> filters = reqs.getContext().getMatchedFilters(reqs.getRequestURI());
+            ApplicationFilterChain filterChain = new ApplicationFilterChain(filters, workingServlet);
+            filterChain.doFilter(reqs, resp);
 
+            if(reqs.isForwarded()) return;
             if(resp.getStatus()==Header.CODE_200) handleResponse200(s, reqs, resp);
             if(resp.getStatus()==Header.CODE_404) handle404(s, uri);
+            if(resp.getStatus()==Header.CODE_302) handleResponse302(s, resp);
         } catch (Exception e) {
             handle500(s, e);
         } finally{
@@ -80,6 +91,14 @@ public class HttpProcessor {
         boolean gzip = isGzip(reqs, resp.getBody(), resp.getContentType());
         byte[] respMessage = getResponseMessage200(resp, gzip);
         os.write(respMessage);
+        os.flush();
+    }
+
+    protected void handleResponse302(Socket s, Response resp) throws IOException{
+        OutputStream os = s.getOutputStream();
+        String redirectPath = resp.getRedirectPath();
+        String header = Header.ResponseHeader302 + "Location:"+redirectPath+"\r\n\r\n";
+        os.write(header.getBytes(StandardCharsets.UTF_8));
         os.flush();
     }
 

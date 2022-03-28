@@ -9,6 +9,7 @@ import individual.wangtianyao.diytomcat.catalina.Connector;
 import individual.wangtianyao.diytomcat.catalina.Context;
 import individual.wangtianyao.diytomcat.catalina.Service;
 
+import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpSession;
@@ -36,12 +37,15 @@ public class Request extends BaseRequest {
     private HttpSession session;
     private final Map<String, String[]> parameterMap;
     private Map<String, String> headerMap;
+    private Map<String, Object> attributesMap;
+    private boolean forwarded=false;
 
     public Request(Socket socket, Connector connector) throws IOException{
         this.socket = socket;
         this.connector=connector;
         this.parameterMap = new HashMap<>();
         this.headerMap = new HashMap<>();
+        this.attributesMap = new HashMap<>();
         parseHttpRequest();
         if(StrUtil.isEmpty(requestString)) return;
         parseUri();
@@ -308,7 +312,47 @@ public class Request extends BaseRequest {
         return url;
     }
 
+    @Override
+    public Object getAttribute(String s) {
+        return attributesMap.get(s);
+    }
+
+    @Override
+    public Enumeration<String> getAttributeNames() {
+        return Collections.enumeration(attributesMap.keySet());
+    }
+
+    @Override
+    public void setAttribute(String s, Object o) {
+        attributesMap.put(s, o);
+    }
+
+    @Override
+    public void removeAttribute(String s) {
+        attributesMap.remove(s);
+    }
+
     public String getServletPath(){
         return uri;
+    }
+
+    public void setUri(String uri){
+        this.uri=uri;
+    }
+
+    public boolean isForwarded() {
+        return forwarded;
+    }
+
+    public void setForwarded(boolean forwarded) {
+        this.forwarded = forwarded;
+    }
+
+    public Socket getSocket() {
+        return socket;
+    }
+
+    public RequestDispatcher getRequestDispatcher(String uri){
+        return new ApplicationRequestDispatcher(uri);
     }
 }
